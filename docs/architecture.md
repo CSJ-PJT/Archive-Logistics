@@ -18,6 +18,7 @@ Archive-Logistics owns only logistics event processing.
 - Store publish targets in PostgreSQL outbox
 - Publish outbox events through Spring Batch / service publisher
 - Provide operations, route summary, outbox summary, health, and audit visibility
+- Serve a lightweight operations dashboard from `/` and `/dashboard.html`
 
 Archive-Logistics does not own Ledger domain tables such as financial transactions, ledger entries, settlement batches, reconciliation results, or approval requests.
 
@@ -32,6 +33,7 @@ Archive-Logistics does not own Ledger domain tables such as financial transactio
 7. A manual API call, scheduled publisher, or Spring Batch job publishes eligible outbox events.
 8. Publish attempts are recorded in `ledger_publish_attempt`.
 9. Audit records are stored in `audit_log`.
+10. The operations dashboard reads summary APIs and visualizes Nexus -> Logistics -> Outbox -> Ledger -> ArchiveOS flow.
 
 ## Failure Isolation
 
@@ -49,4 +51,3 @@ No real map API, OSRM, GraphHopper, real address, real vehicle, real carrier, or
 ## Naming Compatibility
 
 External service name is **Archive-Logistics**. Some internal source names, class names, artifact names, and historical event values may still contain `Archive-Logitics` or `logitics` for compatibility with the original repository and previously generated event contracts.
-

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archive-Logistics Operations</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/assets/logo.png" alt="ArchiveOS logo">
+      <div>
+        <h1>Archive-Logistics</h1>
+        <p>출하 이벤트를 route, ETA, cost로 변환해 Ledger로 발행하는 물류 이벤트 서비스</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="refreshButton" type="button">Refresh</button>
+      <button id="simulateButton" type="button">Simulate 100</button>
+      <button id="publishButton" type="button">Publish Outbox</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="status-strip" aria-label="service status">
+      <div>
+        <span>Service</span>
+        <strong id="serviceStatus">-</strong>
+      </div>
+      <div>
+        <span>Profile</span>
+        <strong id="profile">-</strong>
+      </div>
+      <div>
+        <span>Ledger</span>
+        <strong id="ledgerStatus">-</strong>
+      </div>
+      <div>
+        <span>Last Refresh</span>
+        <strong id="lastRefresh">-</strong>
+      </div>
+    </section>
+
+    <section class="pipeline" aria-label="event processing flow">
+      <article class="stage">
+        <span class="stage-label">1</span>
+        <h2>Archive-Nexus</h2>
+        <p>출하/물류 이벤트 수신</p>
+        <strong id="receivedEvents">0</strong>
+      </article>
+      <article class="stage">
+        <span class="stage-label">2</span>
+        <h2>Route Calculator</h2>
+        <p>synthetic route / ETA / cost 계산</p>
+        <strong id="routePlans">0</strong>
+      </article>
+      <article class="stage">
+        <span class="stage-label">3</span>
+        <h2>Outbox</h2>
+        <p>Ledger publish 대상 저장</p>
+        <strong id="outboxPending">0</strong>
+      </article>
+      <article class="stage">
+        <span class="stage-label">4</span>
+        <h2>Archive-Ledger</h2>
+        <p>비용 확정 이벤트 발행</p>
+        <strong id="ledgerMode">-</strong>
+      </article>
+      <article class="stage">
+        <span class="stage-label">5</span>
+        <h2>ArchiveOS</h2>
+        <p>승인/감사/운영 관제 참조</p>
+        <strong id="approvalRequired">0</strong>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Operations Summary</h2>
+          <span id="traceId">trace -</span>
+        </div>
+        <div class="metrics">
+          <div><span>Processed</span><strong id="processedEvents">0</strong></div>
+          <div><span>Duplicates</span><strong id="duplicateEvents">0</strong></div>
+          <div><span>Failed</span><strong id="failedEvents">0</strong></div>
+          <div><span>Used Heap</span><strong id="usedHeap">0 MB</strong></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Route / Cost</h2>
+          <form id="routeFilter" class="filter">
+            <select id="factoryId" aria-label="factory">
+              <option value="">All factories</option>
+              <option value="FAC-A">FAC-A</option>
+              <option value="FAC-B">FAC-B</option>
+              <option value="FAC-C">FAC-C</option>
+            </select>
+            <input id="summaryDate" type="date" aria-label="date">
+            <button type="submit">Apply</button>
+          </form>
+        </div>
+        <div class="metrics">
+          <div><span>Routes</span><strong id="summaryRoutes">0</strong></div>
+          <div><span>Total Cost</span><strong id="totalCost">0 KRW</strong></div>
+          <div><span>Delayed</span><strong id="delayedRoutes">0</strong></div>
+          <div><span>Deviated</span><strong id="deviatedRoutes">0</strong></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Outbox State</h2>
+          <span id="outboxTotal">0 events</span>
+        </div>
+        <div class="outbox-bar" aria-label="outbox distribution">
+          <span id="barPending" class="pending"></span>
+          <span id="barPublished" class="published"></span>
+          <span id="barRetry" class="retry"></span>
+          <span id="barFailed" class="failed"></span>
+          <span id="barSkipped" class="skipped"></span>
+        </div>
+        <div class="legend">
+          <span><i class="pending"></i>Pending <b id="pendingCount">0</b></span>
+          <span><i class="published"></i>Published <b id="publishedCount">0</b></span>
+          <span><i class="retry"></i>Retry <b id="retryCount">0</b></span>
+          <span><i class="failed"></i>Failed <b id="failedCount">0</b></span>
+          <span><i class="skipped"></i>Skipped <b id="skippedCount">0</b></span>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Ledger Publish</h2>
+          <span id="ledgerEndpoint">-</span>
+        </div>
+        <dl class="details">
+          <div><dt>Enabled</dt><dd id="ledgerEnabled">-</dd></div>
+          <div><dt>Contract</dt><dd id="contractMode">-</dd></div>
+          <div><dt>Last Publish</dt><dd id="lastPublish">not requested</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="grid lower">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Risk Signals</h2>
+        </div>
+        <div class="metrics">
+          <div><span>Approval</span><strong id="riskApproval">0</strong></div>
+          <div><span>Delayed</span><strong id="riskDelayed">0</strong></div>
+          <div><span>Deviation</span><strong id="riskDeviation">0</strong></div>
+          <div><span>Cold Chain</span><strong id="riskColdChain">0</strong></div>
+        </div>
+      </article>
+      <article class="panel log-panel">
+        <div class="panel-head">
+          <h2>Activity</h2>
+          <span>latest client actions</span>
+        </div>
+        <ol id="activityLog" class="activity"></ol>
+      </article>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

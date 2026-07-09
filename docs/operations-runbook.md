@@ -3,12 +3,14 @@
 ## First Checks
 
 ```powershell
+curl.exe http://localhost:8092/
 curl.exe http://localhost:8092/actuator/health
 curl.exe http://localhost:8092/api/operations/summary
 ```
 
 Healthy baseline:
 
+- operations dashboard loads
 - actuator status is `UP`
 - operations status is `HEALTHY`
 - `failedEvents` is low or zero
@@ -99,4 +101,3 @@ Use `oci-lite` profile and reduce:
 - retention period
 
 See [oci-lite-profile.md](oci-lite-profile.md).
-

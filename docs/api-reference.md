@@ -9,9 +9,13 @@ http://localhost:8092
 ## Health
 
 ```http
+GET /
+GET /dashboard.html
 GET /actuator/health
 GET /api/health
 ```
+
+`/` and `/dashboard.html` serve the operations dashboard. The dashboard is static HTML/CSS/JavaScript and reads the public operational APIs listed below.
 
 ## Operations
 
@@ -94,4 +98,3 @@ GET /api/batch/jobs/{executionId}
 ```
 
 Used for explicit Spring Batch publisher execution and job inspection.
-

@@ -17,6 +17,7 @@ Or run with local dependencies:
 ## Health
 
 ```powershell
+curl.exe http://localhost:8092/
 curl.exe http://localhost:8092/actuator/health
 curl.exe http://localhost:8092/api/health
 ```
@@ -24,6 +25,7 @@ curl.exe http://localhost:8092/api/health
 Expected:
 
 - HTTP 200
+- dashboard HTML is returned for `/`
 - actuator status `UP`
 - API service name `Archive-Logistics`
 
@@ -91,4 +93,3 @@ Check:
 .\gradlew.bat build --no-daemon --console=plain
 docker compose config --quiet
 ```
-
