@@ -6,7 +6,7 @@ Archive-Logistics publishes logistics cost-confirmed events to Archive-Ledger th
 
 ```env
 ARCHIVE_LEDGER_ENABLED=true
-ARCHIVE_LEDGER_BASE_URL=http://localhost:8093
+ARCHIVE_LEDGER_BASE_URL=http://localhost:18080
 ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
 ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
 ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
@@ -16,7 +16,7 @@ ARCHIVE_OUTBOX_SCHEDULER_ENABLED=false
 Docker uses this host URL by default:
 
 ```env
-ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:8093
+ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
 ```
 
 ## Publish Flow
@@ -74,12 +74,12 @@ Archive-Logistics does not create Ledger settlement or reconciliation tables. It
 After a successful publish, verify Ledger:
 
 ```powershell
-curl.exe "http://localhost:8093/api/events/received?source=Archive-Logitics"
-curl.exe "http://localhost:8093/api/transactions?source=Archive-Logitics"
-curl.exe "http://localhost:8093/api/ledger/summary?source=Archive-Logitics"
-curl.exe -X POST "http://localhost:8093/api/settlements/daily/run?date=2026-01-15"
-curl.exe -X POST "http://localhost:8093/api/reconciliation/daily?date=2026-01-15"
-curl.exe http://localhost:8093/api/reconciliation/summary
+curl.exe "http://localhost:18080/api/events/received?source=Archive-Logitics"
+curl.exe "http://localhost:18080/api/transactions?source=Archive-Logitics"
+curl.exe "http://localhost:18080/api/ledger/summary?source=Archive-Logitics"
+curl.exe -X POST "http://localhost:18080/api/settlements/daily/run?date=2026-01-15"
+curl.exe -X POST "http://localhost:18080/api/reconciliation/daily?date=2026-01-15"
+curl.exe http://localhost:18080/api/reconciliation/summary
 ```
 
 ## Failure Modes

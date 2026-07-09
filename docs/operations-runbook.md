@@ -71,7 +71,7 @@ Check configuration:
 archive:
   ledger:
     enabled: true
-    base-url: http://localhost:8093
+    base-url: http://localhost:18080
     bulk-endpoint: /api/events/logistics/bulk
     contract-mode: LOGISTICS_CONFIRMED_NATIVE
 ```
@@ -89,7 +89,7 @@ Docker/local defaults:
 
 ```env
 ARCHIVE_LEDGER_ENABLED=true
-ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:8093
+ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
 ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
 ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
 ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
@@ -109,9 +109,9 @@ curl.exe -X POST http://localhost:8092/api/outbox/publish
 After successful Ledger ingestion, Ledger can run:
 
 ```powershell
-curl.exe -X POST "http://localhost:8093/api/settlements/daily/run?date=YYYY-MM-DD"
-curl.exe -X POST "http://localhost:8093/api/reconciliation/daily?date=YYYY-MM-DD"
-curl.exe http://localhost:8093/api/reconciliation/summary
+curl.exe -X POST "http://localhost:18080/api/settlements/daily/run?date=YYYY-MM-DD"
+curl.exe -X POST "http://localhost:18080/api/reconciliation/daily?date=YYYY-MM-DD"
+curl.exe http://localhost:18080/api/reconciliation/summary
 ```
 
 In automatic demo mode, Archive-Ledger runs scheduled settlement/reconciliation and Archive-Logistics runs the Nexus daily settlement callback after the Logistics outbox is fully published for the target date.

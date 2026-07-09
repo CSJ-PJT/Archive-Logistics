@@ -37,7 +37,7 @@ Archive-Logistics creates Ledger-compatible logistics cost events through the ou
 Default publish contract:
 
 ```http
-POST http://localhost:8093/api/events/logistics/bulk
+POST http://localhost:18080/api/events/logistics/bulk
 Content-Type: application/json
 ```
 

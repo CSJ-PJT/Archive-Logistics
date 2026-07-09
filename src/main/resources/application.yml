@@ -50,7 +50,7 @@ springdoc:
 archive:
   ledger:
     enabled: ${ARCHIVE_LEDGER_ENABLED:false}
-    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:8093}
+    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
     publish-timeout-ms: ${ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS:30000}
     contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}

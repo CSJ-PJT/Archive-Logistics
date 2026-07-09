@@ -108,7 +108,7 @@ docker compose up --build
 
 - `SPRING_PROFILES_ACTIVE=local`
 - `ARCHIVE_LEDGER_ENABLED=true` (Ledger 실서비스 연동 시)
-- `ARCHIVE_LEDGER_BASE_URL=http://localhost:8093` 또는 `host.docker.internal:8093`
+- `ARCHIVE_LEDGER_BASE_URL=http://localhost:18080` 또는 `host.docker.internal:18080`
 - `ARCHIVE_NEXUS_SETTLEMENT_ENABLED=true`
 
 ## Smoke 체크
