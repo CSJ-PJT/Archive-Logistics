@@ -59,6 +59,8 @@ Expected behavior:
 - service remains healthy
 - no external request is sent
 
+Docker/local demo defaults set `archive.ledger.enabled=true` so manual publish and `outboxPublishJob` can send real events to Ledger. Disable it only for fault-isolation drills or when Ledger is intentionally offline.
+
 ## Retry Behavior
 
 On publish failure:
@@ -69,19 +71,38 @@ On publish failure:
 - set `RETRY` until max retry count
 - set `FAILED` after max retry count is reached
 
-## Spring Batch
+## Spring Batch and Scheduler
 
-`outboxPublishJob` processes outbox rows in chunks. Local profile keeps scheduler off by default to avoid accidental external delivery during development.
+`outboxPublishJob` processes outbox rows in chunks. Docker/local demo configuration keeps the scheduler disabled by default; manual publish and explicit batch runs are still real Ledger sends when `archive.ledger.enabled=true`.
 
-Scheduler should be enabled explicitly:
+Scheduler settings:
 
 ```yaml
 archive:
   outbox:
     scheduler:
-      enabled: true
+      enabled: false
       fixed-delay-ms: 30000
 ```
+
+Enable the scheduler only when automatic external delivery is intended:
+
+```env
+ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true
+```
+
+Default Ledger publish contract:
+
+```yaml
+archive:
+  ledger:
+    enabled: true
+    base-url: http://localhost:18080
+    bulk-endpoint: /api/events/logistics/bulk
+    contract-mode: LOGISTICS_CONFIRMED_NATIVE
+```
+
+Docker uses `http://host.docker.internal:18080` by default so the Logistics container can reach a Ledger process running on the host.
 
 ## Manual Publish
 
@@ -94,4 +115,3 @@ curl.exe -X POST http://localhost:8092/api/outbox/publish
 ```powershell
 curl.exe -X POST http://localhost:8092/api/outbox/retry-failed
 ```
-

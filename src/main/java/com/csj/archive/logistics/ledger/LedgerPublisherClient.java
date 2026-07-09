@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -58,7 +59,9 @@ public class LedgerPublisherClient {
             return LedgerBulkPublishResponse.success(events.size());
         }
         try {
-            return objectMapper.readValue(responseBody, LedgerBulkPublishResponse.class);
+            JsonNode response = objectMapper.readTree(responseBody);
+            JsonNode payload = response.has("data") ? response.path("data") : response;
+            return objectMapper.treeToValue(payload, LedgerBulkPublishResponse.class);
         } catch (Exception error) {
             throw new IllegalStateException("Ledger bulk publish response parsing failed: " + responseBody, error);
         }

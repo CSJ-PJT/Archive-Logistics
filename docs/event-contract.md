@@ -34,6 +34,40 @@ Required payload fields:
 
 Archive-Logistics creates Ledger-compatible logistics cost events through the outbox.
 
+Default publish contract:
+
+```http
+POST http://localhost:18080/api/events/logistics/bulk
+Content-Type: application/json
+```
+
+```json
+{
+  "source": "Archive-Logitics",
+  "events": [
+    {
+      "eventId": "evt-logitics-20260115-000456",
+      "idempotencyKey": "LOGISTICS:LOGISTICS_COST_CONFIRMED:ROUTE-000456",
+      "source": "Archive-Logitics",
+      "eventType": "LOGISTICS_COST_CONFIRMED",
+      "aggregateType": "ROUTE_PLAN",
+      "aggregateId": "ROUTE-000456",
+      "schemaVersion": 1,
+      "occurredAt": "2026-01-15T10:45:00Z",
+      "payload": {
+        "routePlanId": "ROUTE-000456",
+        "shipmentId": "SHIP-000123",
+        "factoryId": "FAC-A",
+        "vendorId": "VENDOR-LOGISTICS-01",
+        "totalCost": 93420,
+        "currency": "KRW",
+        "requiresApproval": false
+      }
+    }
+  ]
+}
+```
+
 Supported output event types include:
 
 - `LOGISTICS_COST_CONFIRMED`
@@ -43,6 +77,8 @@ Supported output event types include:
 - `COLD_CHAIN_RISK_COST_CONFIRMED`
 
 Compatibility mode may publish `LOGISTICS_DISPATCHED` shaped payloads when `ARCHIVE_LEDGER_V1_COMPAT` is enabled.
+
+Ledger uses these events to create finance transactions, ledger entries, daily settlement targets, and reconciliation counts. Archive-Logistics does not create Ledger settlement or reconciliation rows directly.
 
 ## Idempotency
 
@@ -74,4 +110,3 @@ Duplicate policy:
 ## Data Policy
 
 Events use synthetic factory, destination, route, and vendor codes only. Real addresses, real drivers, real vehicles, real carriers, payment cards, accounts, user locations, and personal data are not generated or stored.
-

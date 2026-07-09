@@ -87,7 +87,7 @@ POST /api/outbox/publish
 POST /api/outbox/retry-failed
 ```
 
-`POST /api/outbox/publish` returns dry-run output when Ledger is disabled.
+`POST /api/outbox/publish` sends publishable outbox rows to Archive-Ledger when `archive.ledger.enabled=true`. The default native endpoint is `POST http://localhost:18080/api/events/logistics/bulk`. When Ledger is disabled, it returns dry-run output without an external call.
 
 ## Batch
 

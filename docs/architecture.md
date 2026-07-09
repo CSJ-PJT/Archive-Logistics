@@ -17,6 +17,7 @@ Archive-Logistics owns only logistics event processing.
 - Create Ledger-compatible logistics cost events
 - Store publish targets in PostgreSQL outbox
 - Publish outbox events through Spring Batch / service publisher
+- Send Ledger native logistics bulk events to `/api/events/logistics/bulk`
 - Provide operations, route summary, outbox summary, health, and audit visibility
 - Serve a lightweight operations dashboard from `/` and `/dashboard.html`
 
@@ -30,10 +31,11 @@ Archive-Logistics does not own Ledger domain tables such as financial transactio
 4. `SyntheticRouteCalculator` calculates route plan, ETA, risk, delay, deviation, and route cost.
 5. Route and cost records are persisted.
 6. A Ledger-compatible payload is stored in `logistics_outbox_event`.
-7. A manual API call, scheduled publisher, or Spring Batch job publishes eligible outbox events.
-8. Publish attempts are recorded in `ledger_publish_attempt`.
-9. Audit records are stored in `audit_log`.
-10. The operations dashboard reads summary APIs and visualizes Nexus -> Logistics -> Outbox -> Ledger -> ArchiveOS flow.
+7. A manual API call, explicit Spring Batch job, or opt-in scheduler publishes eligible outbox events.
+8. Archive-Ledger receives logistics cost events and can create finance transactions for daily settlement and reconciliation.
+9. Publish attempts are recorded in `ledger_publish_attempt`.
+10. Audit records are stored in `audit_log`.
+11. The operations dashboard reads summary APIs and visualizes Nexus -> Logistics -> Outbox -> Ledger -> ArchiveOS flow.
 
 ## Failure Isolation
 
@@ -41,6 +43,7 @@ Ledger availability does not control Nexus event ingestion or route/cost calcula
 
 - Ledger disabled: publish returns DRY_RUN/SKIPPED without external request.
 - Ledger unavailable: outbox records retry metadata and keeps the service alive.
+- Scheduler disabled: pending outbox rows remain until manual publish, batch run, or scheduler enablement.
 - Retry metadata: `retry_count`, `last_error`, `next_retry_at`.
 - Final failure: records move to `FAILED` after max retry count.
 

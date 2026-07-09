@@ -1,7 +1,10 @@
 package com.csj.archive.logistics.ledger;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record LedgerBulkPublishResponse(
         int received,
         int accepted,
@@ -17,6 +20,7 @@ public record LedgerBulkPublishResponse(
         return accepted + duplicate;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record EventResult(
             String eventId,
             String status,

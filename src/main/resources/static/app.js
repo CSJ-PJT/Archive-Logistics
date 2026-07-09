@@ -84,7 +84,9 @@ function updateOperations(payload) {
   setText("riskColdChain", formatNumber(data.risk?.coldChainRisk));
   setText("ledgerMode", data.ledger?.enabled ? "ENABLED" : "DRY_RUN");
   setText("ledgerEnabled", String(Boolean(data.ledger?.enabled)));
-  setText("ledgerEndpoint", data.ledger?.baseUrl || "-");
+  const ledgerBase = data.ledger?.baseUrl || "";
+  const ledgerPath = data.ledger?.bulkEndpoint || "";
+  setText("ledgerEndpoint", ledgerBase ? `${ledgerBase.replace(/\/+$/, "")}${ledgerPath.startsWith("/") ? ledgerPath : `/${ledgerPath}`}` : "-");
   setText("contractMode", data.ledger?.contractMode || "-");
   setText("usedHeap", `${formatNumber(data.memory?.usedHeapMb)} MB`);
   setText("lastRefresh", nowText());
@@ -166,7 +168,7 @@ async function publishOutbox() {
   try {
     const result = await request("/api/outbox/publish", { method: "POST" });
     const data = result.data || {};
-    setText("lastPublish", `${data.status || "-"} · requested ${formatNumber(data.requestedCount)} · skipped ${formatNumber(data.skippedCount)}`);
+    setText("lastPublish", `${data.status || "-"} | requested ${formatNumber(data.requestedCount)} | published ${formatNumber(data.publishedCount)} | retry ${formatNumber(data.retriedCount)} | skipped ${formatNumber(data.skippedCount)}`);
     logActivity("Publish", data.message || data.status || "completed");
     await refresh();
   } catch (error) {

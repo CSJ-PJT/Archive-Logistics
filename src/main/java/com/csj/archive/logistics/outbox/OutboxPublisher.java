@@ -147,7 +147,7 @@ public class OutboxPublisher {
         }
     }
 
-    @Scheduled(fixedDelayString = "${archive.outbox.scheduler.interval-ms:30000}")
+    @Scheduled(fixedDelayString = "${archive.outbox.scheduler.fixed-delay-ms:${archive.outbox.scheduler.interval-ms:30000}}")
     public void publishOnSchedule() {
         if (outboxProperties.getScheduler().isEnabled()) {
             publishAvailable("scheduler", outboxProperties.getChunkSize());

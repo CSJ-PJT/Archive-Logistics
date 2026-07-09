@@ -15,7 +15,11 @@ logging:
 
 archive:
   ledger:
-    enabled: ${ARCHIVE_LEDGER_ENABLED:false}
+    enabled: ${ARCHIVE_LEDGER_ENABLED:true}
     base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
-    bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/nexus/bulk}
-    contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:ARCHIVE_LEDGER_V1_COMPAT}
+    bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
+    contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}
+  outbox:
+    scheduler:
+      enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS:30000}

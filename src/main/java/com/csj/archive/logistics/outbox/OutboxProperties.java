@@ -35,6 +35,7 @@ public class OutboxProperties {
     public static class Scheduler {
         private boolean enabled = false;
         private long intervalMs = 30000;
+        private long fixedDelayMs = 30000;
 
         public boolean isEnabled() {
             return enabled;
@@ -50,6 +51,16 @@ public class OutboxProperties {
 
         public void setIntervalMs(long intervalMs) {
             this.intervalMs = intervalMs;
+            this.fixedDelayMs = intervalMs;
+        }
+
+        public long getFixedDelayMs() {
+            return fixedDelayMs;
+        }
+
+        public void setFixedDelayMs(long fixedDelayMs) {
+            this.fixedDelayMs = fixedDelayMs;
+            this.intervalMs = fixedDelayMs;
         }
     }
 }

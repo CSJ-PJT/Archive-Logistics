@@ -13,8 +13,8 @@ archive:
   ledger:
     enabled: false
     base-url: http://localhost:18080
-    bulk-endpoint: /api/events/nexus/bulk
-    contract-mode: ARCHIVE_LEDGER_V1_COMPAT
+    bulk-endpoint: /api/events/logistics/bulk
+    contract-mode: LOGISTICS_CONFIRMED_NATIVE
   outbox:
     chunk-size: 25
     max-retry-count: 5

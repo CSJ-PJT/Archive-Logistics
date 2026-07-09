@@ -55,8 +55,11 @@ Possible causes:
 
 Actions:
 
-- if local/dev: verify DRY_RUN/SKIPPED is expected
-- if Ledger should be enabled: check `ARCHIVE_LEDGER_ENABLED`
+- if local/dev: verify `ARCHIVE_LEDGER_ENABLED=true` unless a dry-run drill is intended
+- use `POST /api/outbox/publish` or `POST /api/batch/outbox-publish/run` for explicit publish
+- check `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true` only when automatic publish is intended
+- check `ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk`
+- check `ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE`
 - inspect `last_error` on outbox events
 - run manual publish after dependency recovery
 
@@ -68,8 +71,9 @@ Check configuration:
 archive:
   ledger:
     enabled: true
-    base-url: http://localhost:8093
+    base-url: http://localhost:18080
     bulk-endpoint: /api/events/logistics/bulk
+    contract-mode: LOGISTICS_CONFIRMED_NATIVE
 ```
 
 Then verify:
@@ -78,6 +82,34 @@ Then verify:
 - bulk endpoint contract matches configured `contract-mode`
 - timeout is not too low for the environment
 - `retry_count` is increasing as expected
+
+## Ledger Publish Settings
+
+Docker/local defaults:
+
+```env
+ARCHIVE_LEDGER_ENABLED=true
+ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
+ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
+ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
+ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
+ARCHIVE_OUTBOX_SCHEDULER_ENABLED=false
+ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS=30000
+```
+
+Run manual publish:
+
+```powershell
+curl.exe -X POST http://localhost:8092/api/outbox/publish
+```
+
+After successful Ledger ingestion, Ledger can run:
+
+```powershell
+curl.exe -X POST "http://localhost:18080/api/settlements/daily/run?date=YYYY-MM-DD"
+curl.exe -X POST "http://localhost:18080/api/reconciliation/daily?date=YYYY-MM-DD"
+curl.exe http://localhost:18080/api/reconciliation/summary
+```
 
 ## If Nexus Events Fail
 

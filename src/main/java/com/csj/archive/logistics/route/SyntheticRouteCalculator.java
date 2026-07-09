@@ -12,7 +12,7 @@ import java.util.Locale;
 @Component
 public class SyntheticRouteCalculator {
     private static final String CURRENCY = "KRW";
-    private static final String REASON = "Synthetic logistics cost confirmed by Archive-Logitics";
+    private static final String REASON = "Synthetic logistics cost confirmed by Archive-Logistics";
 
     private final SyntheticDistanceMatrix distanceMatrix;
     private final DeterministicHash hash;

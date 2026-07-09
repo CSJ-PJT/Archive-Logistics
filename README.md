@@ -66,7 +66,30 @@ It reads existing APIs only:
 - `/api/simulations/shipments`
 - `/api/outbox/publish`
 
+## Ledger Publish Defaults
+
+Docker/local demo configuration is ready to publish real Logistics cost events to Archive-Ledger's native logistics API.
+
+```env
+ARCHIVE_LEDGER_ENABLED=true
+ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
+ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
+ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
+ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
+ARCHIVE_OUTBOX_SCHEDULER_ENABLED=false
+ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS=30000
+```
+
+With these values, `POST /api/outbox/publish` and `outboxPublishJob` send pending Logistics outbox events to Archive-Ledger. The scheduler remains opt-in; set `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true` only when automatic publish is intended. Set `ARCHIVE_LEDGER_ENABLED=false` for dry-run/fault-isolation scenarios.
+
 ## Failure Isolation
+
+Operational Ledger publish defaults:
+
+- `archive.ledger.enabled=true`: publisher calls Archive-Ledger `POST /api/events/logistics/bulk`.
+- default local Ledger URL: `http://localhost:18080`
+- default Docker Ledger URL: `http://host.docker.internal:18080`
+- scheduler remains disabled unless `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true`.
 
 Ledger 연동은 DB Outbox Pattern으로 격리합니다. Nexus 이벤트 수신과 route/cost 계산은 하나의 트랜잭션에서 처리하고, 외부 Ledger 발행은 outbox publisher가 별도로 수행합니다.
 
@@ -105,7 +128,7 @@ docker compose up --build
 
 - App: `http://localhost:8092`
 - PostgreSQL: `localhost:5434`
-- Expected Ledger: `http://localhost:8093` 또는 profile 설정값
+- Expected Ledger: `http://localhost:18080`
 
 ## Smoke Test
 
@@ -122,7 +145,7 @@ curl.exe http://localhost:8092/api/outbox/summary
 curl.exe -X POST http://localhost:8092/api/outbox/publish
 ```
 
-Ledger disabled 상태에서 publish는 외부 호출 없이 DRY_RUN/SKIPPED로 종료됩니다.
+Docker/local demo defaults are ready for real Ledger native publish. Run Archive-Ledger on `http://localhost:18080`, then call `POST /api/outbox/publish`. If `ARCHIVE_LEDGER_ENABLED=false`, publish ends as DRY_RUN/SKIPPED without an external call. If Ledger is enabled but unreachable, outbox retry metadata is recorded.
 
 ## Runbook
 
@@ -132,8 +155,8 @@ Ledger disabled 상태에서 publish는 외부 호출 없이 DRY_RUN/SKIPPED로 
 2. `GET /api/operations/summary`에서 `failedEvents`, `outbox.failed`, `outbox.retry`, `ledger.status`를 확인합니다.
 3. `GET /api/routes/summary`로 route/cost 집계가 정상인지 확인합니다.
 4. `GET /api/outbox/summary`로 pending/retry/failed 비율을 확인합니다.
-5. Ledger disabled 환경이면 publish 결과가 DRY_RUN/SKIPPED인지 확인합니다.
-6. Ledger enabled 환경에서 실패가 증가하면 `last_error`, `retry_count`, `ledger_publish_attempt`를 확인합니다.
+5. `ledger.enabled=true`, `contractMode=LOGISTICS_CONFIRMED_NATIVE`, `bulkEndpoint=/api/events/logistics/bulk`인지 확인합니다.
+6. 실패가 증가하면 `last_error`, `retry_count`, `ledger_publish_attempt`를 확인합니다.
 
 상세 운영 절차는 [operations-runbook.md](docs/operations-runbook.md)를 참고합니다.
 
@@ -143,6 +166,7 @@ Ledger disabled 상태에서 publish는 외부 호출 없이 DRY_RUN/SKIPPED로 
 - [Event Contract](docs/event-contract.md)
 - [Route Summary Fix](docs/routes-summary-fix.md)
 - [Outbox Batch Publisher](docs/outbox-batch-publisher.md)
+- [Ledger Integration](docs/ledger-integration.md)
 - [API Reference](docs/api-reference.md)
 - [Smoke Test](docs/smoke-test.md)
 - [Operations Runbook](docs/operations-runbook.md)

@@ -50,6 +50,7 @@ class ArchiveLogiticsIntegrationTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("archive.ledger.enabled", () -> "false");
         registry.add("archive.outbox.scheduler.enabled", () -> "false");
+        registry.add("spring.task.scheduling.enabled", () -> "false");
     }
 
     @LocalServerPort
@@ -106,8 +107,8 @@ class ArchiveLogiticsIntegrationTest {
 
         var outbox = outboxRepository.findAll().getFirst();
         assertThat(outbox.source()).isEqualTo("Archive-Logitics");
-        assertThat(outbox.eventType()).isEqualTo("LOGISTICS_DISPATCHED");
-        assertThat(outbox.idempotencyKey()).startsWith("LOGISTICS:LOGISTICS_DISPATCHED:ROUTE-");
+        assertThat(outbox.eventType()).isEqualTo("URGENT_DELIVERY_COST_CONFIRMED");
+        assertThat(outbox.idempotencyKey()).startsWith("LOGISTICS:URGENT_DELIVERY_COST_CONFIRMED:ROUTE-");
         assertThat(auditLogRepository.countByAction(AuditAction.OUTBOX_EVENT_CREATED)).isEqualTo(1);
     }
 
@@ -213,7 +214,7 @@ class ArchiveLogiticsIntegrationTest {
         assertThat(data.path("receivedEvents").asLong()).isEqualTo(25);
         assertThat(data.path("outbox").path("pending").asLong()).isEqualTo(25);
         assertThat(data.path("ledger").path("enabled").asBoolean()).isFalse();
-        assertThat(data.path("ledger").path("contractMode").asText()).isEqualTo("ARCHIVE_LEDGER_V1_COMPAT");
+        assertThat(data.path("ledger").path("contractMode").asText()).isEqualTo("LOGISTICS_CONFIRMED_NATIVE");
     }
 
     private ResponseEntity<JsonNode> post(String path, Object body) {

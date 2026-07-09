@@ -14,6 +14,8 @@ Or run with local dependencies:
 .\gradlew.bat bootRun
 ```
 
+For real Ledger publish, run Archive-Ledger on `http://localhost:18080`.
+
 ## Health
 
 ```powershell
@@ -62,11 +64,25 @@ curl.exe http://localhost:8092/api/outbox/summary
 curl.exe -X POST http://localhost:8092/api/outbox/publish
 ```
 
+Expected when Ledger is enabled and reachable:
+
+- HTTP 200
+- publish status `SUCCESS` or `PARTIAL_FAILURE`
+- accepted or duplicate events become `PUBLISHED`
+- Ledger receives `Archive-Logitics` logistics events that can be used for settlement and reconciliation
+
 Expected when Ledger is disabled:
 
 - HTTP 200
 - publish status DRY_RUN/SKIPPED
 - no external Ledger request
+
+Expected when Ledger is enabled but unreachable:
+
+- HTTP 200
+- publish status `FAILED`
+- outbox rows move to `RETRY` or `FAILED`
+- `last_error` contains the connectivity failure
 
 ## Operations Summary
 
