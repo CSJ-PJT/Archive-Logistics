@@ -1,16 +1,17 @@
-# Archive-Logitics
+# Archive-Logistics
 
 <p align="center">
   <img src="./docs/assets/logo.png" alt="ArchiveOS Logo" width="240" style="max-width: 280px; width: 40%; height: auto;" />
 </p>
 
-Archive-Logitics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다.  
-저장소명은 `Archive-Logitics`를 유지하고 Java 패키지/도메인은 `logistics`를 사용합니다.
+Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다.  
+외부 노출명은 `Archive-Logistics`이고, 저장소명/내부 호환 표기는 `Archive-Logitics`입니다.  
+Java 패키지/도메인은 `logistics`를 사용합니다.
 
 ## Archive Ecosystem 역할
 
 - Archive-Nexus: 제조/출하 원인 이벤트를 발생
-- Archive-Logitics: 물류 경로/비용 산정, 검증 가능한 정형 아웃박스 생성, Ledger 이벤트 전달
+- Archive-Logistics: 물류 경로/비용 산정, 검증 가능한 정형 아웃박스 생성, Ledger 이벤트 전달
 - Archive-Ledger: 비용 확정 이벤트를 정산/원장/거래로 반영
 - ArchiveOS: 고액/위험 이벤트의 승인·감사·알림(Archive-Ledger 연동 데이터) 처리
 
@@ -94,3 +95,4 @@ curl.exe "http://localhost:8092/api/routes/plans?page=0&size=20"
 ## Portfolio Line
 
 Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다. PostgreSQL + Flyway 기반 Outbox Pattern, idempotency key 중복 방지, Spring Batch Publisher, Ledger 장애 격리, Actuator 운영 요약 API를 통해 제조 → 물류 → 정산 흐름을 안정적으로 연결했습니다.
+

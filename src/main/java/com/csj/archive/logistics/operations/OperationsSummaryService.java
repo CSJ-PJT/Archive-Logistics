@@ -47,7 +47,7 @@ public class OperationsSummaryService {
         Runtime runtime = Runtime.getRuntime();
         long usedHeap = runtime.totalMemory() - runtime.freeMemory();
         return new OperationsSummaryResponse(
-                "Archive-Logitics",
+                "Archive-Logistics",
                 failedEvents > 0 || outboxFailed > 0 ? "DEGRADED" : "HEALTHY",
                 profile(),
                 nexusEventRepository.count(),

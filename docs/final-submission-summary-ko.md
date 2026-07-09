@@ -1,7 +1,7 @@
-# Archive-Logitics 최종 제출 요약 (한국어)
+# Archive-Logistics 최종 제출 요약 (한국어)
 
 ## 1. 시스템 개요
-- **Archive-Logitics**는 Archive-Nexus가 발행하는 출하/물류 이벤트를 수신해  
+- **Archive-Logistics**는 Archive-Nexus가 발행하는 출하/물류 이벤트를 수신해  
   synthetic route(합성 경로), ETA, 운송비, 지연·우회(Deviation) 비용을 계산하고  
   Ledger 정산용 비용 확정 이벤트를 안정적으로 발행하는 Spring Boot 백엔드입니다.
 - 본 서비스는 실제 지도/물류 데이터 없이, 고정된 **Synthetic Matrix**와 Deterministic 로직으로 비용·위험을 산정합니다.
@@ -20,7 +20,7 @@
 
 ## 3. 핵심 아웃박스/복원성
 - PostgreSQL 기반 Outbox 테이블 + Spring Batch 발행 Job으로 Ledger 연계격리 구현
-- Ledger 장애가 발생해도 Archive-Logitics 자체는 유지되며, 장애는 outbox 상태/재시도로 격리
+- Ledger 장애가 발생해도 Archive-Logistics 자체는 유지되며, 장애는 outbox 상태/재시도로 격리
 
 ## 4. 최종 산출
 - Archive-Nexus 이벤트 수신, idempotency 중복 방지, route/cost 생성, outbox 기록이 모두 동작
@@ -28,5 +28,6 @@
 - 운영 문서와 제출 문서 정리 완료
 
 ## 5. 최종 문장
-Archive-Logitics는 **Archive-Nexus 이벤트 → Synthetic 물류 계산 → Ledger 비용 이벤트 발행**을 안정적으로 잇는 물류 이벤트 백엔드로, 중복 방지·재시도·운영 모니터링 요건을 갖춘 제출 가능한 형태로 정리 완료했습니다.
+Archive-Logistics는 **Archive-Nexus 이벤트 → Synthetic 물류 계산 → Ledger 비용 이벤트 발행**을 안정적으로 잇는 물류 이벤트 백엔드로, 중복 방지·재시도·운영 모니터링 요건을 갖춘 제출 가능한 형태로 정리 완료했습니다.
+
 

@@ -11,7 +11,7 @@ public class OpenApiConfig {
     OpenAPI archiveLogiticsOpenApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Archive-Logitics API")
+                        .title("Archive-Logistics API")
                         .version("1.0.0")
                         .description("Synthetic logistics event backend for Archive Platform Ecosystem"));
     }

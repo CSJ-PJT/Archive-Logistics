@@ -1,7 +1,7 @@
-# Final Smoke Result (Archive-Logitics)
+# Final Smoke Result (Archive-Logistics)
 
 ## 1) 작업 범위
-- Archive-Logitics 역할 검증
+- Archive-Logistics 역할 검증
 - `/api/routes/summary` 500 이슈 해결 확인
 - route/cost 생성 및 조회 smoke
 - Ledger 연동 publish 동작 점검
@@ -39,14 +39,15 @@
 ## 5) Ledger disabled / dry-run 여부
 - Ledger 연동 상태: `false`
 - 처리 결과: **DRY_RUN/SKIPPED 동작 정상**
-- `archive.ledger.base-url`, `bulk-endpoint`, `contract-mode`는 `Archive-Logitics` 구성값으로 노출됨
+- `archive.ledger.base-url`, `bulk-endpoint`, `contract-mode`는 `Archive-Logistics` 구성값으로 노출됨
 
 ## 6) ArchiveOS 읽는 API 목록
 - ArchiveOS가 이 저장소 API를 직접 호출하는 항목: 현재는 없음(범위상 Ledger 전용 계약 이벤트 전달만 존재)
-- 간접 경로(동일 생태계 흐름): Archive-Ledger가 Archive-Logitics가 발행한 비용 확정 이벤트를 수신/처리
-- Archive-Logitics에서 ArchiveOS가 기대할 수 있는 참조 조회 API:
+- 간접 경로(동일 생태계 흐름): Archive-Ledger가 Archive-Logistics가 발행한 비용 확정 이벤트를 수신/처리
+- Archive-Logistics에서 ArchiveOS가 기대할 수 있는 참조 조회 API:
   - `GET /api/operations/summary`
   - `GET /api/routes/summary`
 
 ## 7) 남은 이슈
 - 없음 (현재 검증 항목은 모두 통과)
+

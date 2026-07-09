@@ -55,3 +55,4 @@ curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A&date=2026-01-
 ```
 
 All responses should return HTTP 200 and include `routePlans` aggregation.
+

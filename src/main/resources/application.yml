@@ -1,6 +1,6 @@
 spring:
   application:
-    name: Archive-Logitics
+    name: Archive-Logistics
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
   jpa:
@@ -38,7 +38,7 @@ management:
 
 info:
   app:
-    name: Archive-Logitics
+    name: Archive-Logistics
     description: Synthetic logistics event backend for Archive Platform Ecosystem
 
 springdoc:

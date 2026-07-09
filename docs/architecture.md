@@ -1,9 +1,9 @@
 # Architecture
 
-Archive-Logitics는 Archive Platform Ecosystem의 물류 이벤트 변환 계층입니다.
+Archive-Logistics는 Archive Platform Ecosystem의 물류 이벤트 변환 계층입니다.
 
 ```text
-Archive-Nexus -> Archive-Logitics -> Archive-Ledger -> ArchiveOS
+Archive-Nexus -> Archive-Logistics -> Archive-Ledger -> ArchiveOS
 ```
 
 ## Responsibilities
@@ -23,3 +23,4 @@ Ledger가 꺼져 있거나 장애가 있어도 Nexus 이벤트 수신과 route/c
 ## Synthetic Routing
 
 실제 지도 API, OSRM, GraphHopper, 실제 주소/차량/운송사 데이터는 사용하지 않습니다. 모든 거리와 리스크는 코드 내부 matrix와 deterministic hash로 계산됩니다.
+

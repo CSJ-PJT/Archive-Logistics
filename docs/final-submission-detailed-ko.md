@@ -1,7 +1,7 @@
-# Archive-Logitics 최종 제출 상세본 (한국어)
+# Archive-Logistics 최종 제출 상세본 (한국어)
 
 ## 1. 제출 대상 및 범위
-- 대상 저장소: `Archive-Logitics`
+- 대상 저장소: `Archive-Logistics`
 - 대상 브랜치: `main`
 - 프로젝트 성격: Archive-Nexus 이벤트 수신 기반의 **Logistics Synthetic Backend**
 - 제외 항목: Archive-OS / Archive-Ledger 본체 코드 미포함
@@ -21,7 +21,7 @@ deterministic synthetic matrix 및 synthetic id 규칙으로 운영됩니다.
 - `GET /actuator/health`  
   - 응답: `{"status":"UP"}` (정상)
 - `GET /api/operations/summary`
-  - service: Archive-Logitics, status: HEALTHY
+  - service: Archive-Logistics, status: HEALTHY
   - profile: local
   - receivedEvents: 206, processedEvents: 206, failedEvents: 0
   - outbox pending: 106 / published: 100 / failed: 0 / retry: 0 / skipped: 0
@@ -56,7 +56,7 @@ deterministic synthetic matrix 및 synthetic id 규칙으로 운영됩니다.
 ## 6. 제출용 문서 반영
 - `README.md`, `docs/final-smoke-result.md`, `docs/event-contract.md`, `docs/demo-scenario.md` 등과 연계
 - 본문에서 핵심은 다음으로 정리됨
-  - Archive-Logitics 역할
+  - Archive-Logistics 역할
   - Synthetic Data 원칙
   - 이벤트 계약
   - Outbox/Batch 발행 구조
@@ -67,5 +67,6 @@ deterministic synthetic matrix 및 synthetic id 규칙으로 운영됩니다.
 - Ledger를 실제 enabled로 전환한 후 실제 publish 연동 smoke는 별도 검증 필요
 
 ## 8. 최종 제출 한 줄
-Archive-Logitics는 Archive-Nexus의 제조·출하 이벤트를 받아 synthetic route/ETA/비용을 계산하고 Ledger 비용 확정 이벤트를 발행하는 Spring Boot 물류 백엔드로, Outbox 격리, 배치 퍼블리싱, 장애 내성, 운영 요약/모니터링 API를 포함해 배포 가능한 품질로 정리했습니다.
+Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 받아 synthetic route/ETA/비용을 계산하고 Ledger 비용 확정 이벤트를 발행하는 Spring Boot 물류 백엔드로, Outbox 격리, 배치 퍼블리싱, 장애 내성, 운영 요약/모니터링 API를 포함해 배포 가능한 품질로 정리했습니다.
+
 

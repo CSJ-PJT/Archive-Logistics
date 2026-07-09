@@ -209,7 +209,7 @@ class ArchiveLogiticsIntegrationTest {
         ResponseEntity<JsonNode> summary = restTemplate.getForEntity(url("/api/operations/summary"), JsonNode.class);
         assertThat(summary.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode data = summary.getBody().path("data");
-        assertThat(data.path("service").asText()).isEqualTo("Archive-Logitics");
+        assertThat(data.path("service").asText()).isEqualTo("Archive-Logistics");
         assertThat(data.path("receivedEvents").asLong()).isEqualTo(25);
         assertThat(data.path("outbox").path("pending").asLong()).isEqualTo(25);
         assertThat(data.path("ledger").path("enabled").asBoolean()).isFalse();
