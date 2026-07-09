@@ -1,0 +1,9 @@
+package com.csj.archive.logistics.event;
+
+public enum NexusEventType {
+    LOGISTICS_DISPATCHED,
+    URGENT_DELIVERY_REQUESTED,
+    SHIPMENT_HOLD_RELEASED,
+    MATERIAL_TRANSFER_REQUESTED,
+    QUALITY_REPLACEMENT_SHIPMENT
+}

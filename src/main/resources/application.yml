@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: Archive-Logitics
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: false
+
+server:
+  port: ${SERVER_PORT:8092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Archive-Logitics
+    description: Synthetic logistics event backend for Archive Platform Ecosystem
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+archive:
+  ledger:
+    enabled: false
+    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
+    bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/nexus/bulk}
+    publish-timeout-ms: 3000
+    contract-mode: ARCHIVE_LEDGER_V1_COMPAT
+  outbox:
+    chunk-size: 50
+    max-retry-count: 5
+    scheduler:
+      enabled: false
+      fixed-delay-ms: 30000

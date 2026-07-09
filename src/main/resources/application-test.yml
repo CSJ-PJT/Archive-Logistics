@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15434/archive_logitics_test}
+    username: ${SPRING_DATASOURCE_USERNAME:archive}
+    password: ${SPRING_DATASOURCE_PASSWORD:archive}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+  jpa:
+    show-sql: false
+
+archive:
+  ledger:
+    enabled: false
+    base-url: http://localhost:18080
+    bulk-endpoint: /api/events/nexus/bulk
+    contract-mode: ARCHIVE_LEDGER_V1_COMPAT
+  outbox:
+    chunk-size: 25
+    max-retry-count: 5
+    scheduler:
+      enabled: false

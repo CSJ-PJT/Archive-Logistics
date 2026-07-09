@@ -1,0 +1,34 @@
+package com.csj.archive.logistics.outbox;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutboxEntity, Long> {
+    Optional<LogisticsOutboxEntity> findByEventId(String eventId);
+
+    Optional<LogisticsOutboxEntity> findByAggregateId(String aggregateId);
+
+    Page<LogisticsOutboxEntity> findByStatus(OutboxStatus status, Pageable pageable);
+
+    List<LogisticsOutboxEntity> findByStatus(OutboxStatus status);
+
+    long countByStatus(OutboxStatus status);
+
+    @Query("""
+            select e from LogisticsOutboxEntity e
+            where e.status in :statuses
+              and (e.nextRetryAt is null or e.nextRetryAt <= :now)
+            order by e.createdAt asc
+            """)
+    List<LogisticsOutboxEntity> findPublishable(@Param("statuses") Collection<OutboxStatus> statuses,
+                                                @Param("now") LocalDateTime now,
+                                                Pageable pageable);
+}

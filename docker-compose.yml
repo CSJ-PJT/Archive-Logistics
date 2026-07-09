@@ -1,0 +1,43 @@
+services:
+  archive-logitics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: archive-logitics
+    depends_on:
+      archive-logitics-postgres:
+        condition: service_healthy
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://archive-logitics-postgres:5432/archive_logitics
+      SPRING_DATASOURCE_USERNAME: archive
+      SPRING_DATASOURCE_PASSWORD: archive
+      ARCHIVE_LEDGER_ENABLED: ${ARCHIVE_LEDGER_ENABLED:-false}
+      ARCHIVE_LEDGER_BASE_URL: ${ARCHIVE_LEDGER_BASE_URL:-http://host.docker.internal:18080}
+      ARCHIVE_LEDGER_BULK_ENDPOINT: ${ARCHIVE_LEDGER_BULK_ENDPOINT:-/api/events/nexus/bulk}
+      ARCHIVE_LEDGER_CONTRACT_MODE: ${ARCHIVE_LEDGER_CONTRACT_MODE:-ARCHIVE_LEDGER_V1_COMPAT}
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  archive-logitics-postgres:
+    image: postgres:16-alpine
+    container_name: archive-logitics-postgres
+    ports:
+      - "15434:5432"
+    environment:
+      POSTGRES_DB: archive_logitics
+      POSTGRES_USER: archive
+      POSTGRES_PASSWORD: archive
+    volumes:
+      - archive-logitics-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U archive -d archive_logitics"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  archive-logitics-postgres-data:

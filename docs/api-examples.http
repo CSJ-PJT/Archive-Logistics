@@ -1,0 +1,39 @@
+### Health
+GET http://localhost:8092/actuator/health
+
+### Operations
+GET http://localhost:8092/api/operations/summary
+
+### Simulation
+POST http://localhost:8092/api/simulations/shipments?count=100
+
+### Outbox Summary
+GET http://localhost:8092/api/outbox/summary
+
+### Outbox Publish
+POST http://localhost:8092/api/outbox/publish
+
+### Routes
+GET http://localhost:8092/api/routes/plans?page=0&size=20
+
+### Nexus Event
+POST http://localhost:8092/api/events/nexus
+Content-Type: application/json
+
+{
+  "eventId": "evt-nexus-20260115-000123",
+  "idempotencyKey": "NEXUS:LOGISTICS_DISPATCHED:FAC-A:SHIP-000123",
+  "source": "Archive-Nexus",
+  "eventType": "LOGISTICS_DISPATCHED",
+  "occurredAt": "2026-01-15T10:32:15.000Z",
+  "payload": {
+    "factoryId": "FAC-A",
+    "shipmentId": "SHIP-000123",
+    "originCode": "FAC-A",
+    "destinationCode": "DC-SEOUL-01",
+    "priority": "HIGH",
+    "itemType": "battery-module",
+    "quantity": 120,
+    "requiresColdChain": false
+  }
+}
