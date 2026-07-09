@@ -32,7 +32,7 @@ Required payload fields:
 
 ## Ledger Output
 
-Outbox event types include:
+Ledger compatibility output types include:
 
 - `LOGISTICS_DISPATCHED` in `ARCHIVE_LEDGER_V1_COMPAT` mode
 - `LOGISTICS_COST_CONFIRMED`
@@ -52,6 +52,18 @@ Duplicate policy:
 - Same `eventId` or same `idempotencyKey` returns the existing processing result.
 - No duplicate `route_plan`, `route_cost`, or `logistics_outbox_event` is created.
 - Duplicate receipt is recorded in `audit_log`.
+
+Error policy:
+
+- Unknown route: `400`, `eventStatus=FAILED`, failure reason and audit log are recorded.
+- Unknown/invalid input: `400` with structured validation errors.
+
+Outbox publish policy:
+
+- `/api/outbox/publish` publishes in chunks from `PENDING` / `RETRY` and `next_retry_at <= now`.
+- `archive.ledger.enabled=false` returns `DRY_RUN` or `SKIPPED` without external request.
+
+Ledger events are sent only as Ledger-compat output; no Archive-Ledger domain tables are stored in this repository.
 
 Unknown route policy:
 

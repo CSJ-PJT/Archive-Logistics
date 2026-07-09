@@ -1,89 +1,62 @@
 # Archive-Logitics
 
-Archive-Logitics is a Java 21 / Spring Boot backend for synthetic logistics events in the Archive Platform Ecosystem. The repository name intentionally keeps `Logitics`; Java packages, domain terms, and event names use correct `logistics`.
+Archive-Logitics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다.  
+저장소명은 `Archive-Logitics`를 유지하고 Java 패키지/도메인은 `logistics`를 사용합니다.
 
-It receives logistics-related events from Archive-Nexus, calculates deterministic synthetic route plans, ETA, risk, delay/deviation flags, and logistics cost, then stores an outbox event that Archive-Ledger can ingest as a cost-confirmed transaction.
+## Archive Ecosystem 역할
 
-## Ecosystem Role
+- Archive-Nexus: 제조/출하 원인 이벤트를 발생
+- Archive-Logitics: 물류 경로/비용 산정, 검증 가능한 정형 아웃박스 생성, Ledger 이벤트 전달
+- Archive-Ledger: 비용 확정 이벤트를 정산/원장/거래로 반영
+- ArchiveOS: 고액/위험 이벤트의 승인·감사·알림(Archive-Ledger 연동 데이터) 처리
 
-- Archive-Nexus creates manufacturing and shipment cause events.
-- Archive-Logitics converts those events into synthetic logistics route/cost facts.
-- Archive-Ledger receives Ledger-compatible events at `/api/events/nexus/bulk` and creates transactions, ledger entries, settlement, and reconciliation data.
-- ArchiveOS handles approval, audit, RAG evidence, and notification flows for high-risk cases.
-
-Route-Atlas remains separate because this service is not a map/routing engine. Archive-Logitics owns deterministic synthetic logistics event processing and accounting handoff; it does not call real map APIs or use real delivery, vehicle, user location, address, phone, card, or account data.
+실시간 지도/차량/사용자 데이터는 사용하지 않으며, synthetic location/거리/가격 규칙으로만 계산합니다.
 
 ## Stack
 
-Java 21, Spring Boot 3, Spring Web, Validation, JPA, PostgreSQL, Flyway, Spring Batch, Actuator, Micrometer/Prometheus, springdoc-openapi, JUnit 5, AssertJ, Testcontainers, Docker Compose, GitHub Actions.
+Java 21, Spring Boot 3, Spring Web, Validation, Spring Data JPA, PostgreSQL, Flyway, Spring Batch, Actuator, Micrometer, springdoc-openapi, JUnit 5, AssertJ, Testcontainers, Docker Compose, GitHub Actions.
 
-Lombok, Kafka, Redis, real routing engines, and real logistics data are not used.
+Lombok, Kafka, Redis, OSRM/GraphHopper, 실제 지도 API, 실제 배송/차량/주소/PII는 사용하지 않습니다.
 
 ## Local Run
 
-Start PostgreSQL first:
-
 ```powershell
-docker compose up archive-logitics-postgres -d
-```
-
-Run the app:
-
-```powershell
+docker compose up --build
 .\gradlew.bat clean test
 .\gradlew.bat build
 .\gradlew.bat bootRun
 ```
 
-Testcontainers-backed checks are split out for local/CI stability:
-
-```powershell
-.\gradlew.bat integrationTest
-```
-
-Default local endpoints:
-
 - App: `http://localhost:8092`
-- PostgreSQL: `localhost:15434`
-- OpenAPI UI: `http://localhost:8092/swagger-ui.html`
+- PostgreSQL: `localhost:5434`(기본 예시)
+- Actuator: `http://localhost:8092/actuator/health`
 
-## Docker Compose
-
-```powershell
-docker compose up --build
-```
-
-Compose includes only Archive-Logitics and its PostgreSQL database. Archive-Ledger is an external service. In Docker, use:
-
-```powershell
-$env:ARCHIVE_LEDGER_BASE_URL="http://host.docker.internal:18080"
-```
-
-## Key APIs
+## 주요 API
 
 - `POST /api/events/nexus`
 - `POST /api/events/nexus/bulk`
-- `POST /api/simulations/shipments?count=100`
+- `POST /api/simulations/shipments?count=<N>`
 - `GET /api/routes/plans`
 - `GET /api/routes/plans/{routePlanId}`
 - `GET /api/routes/costs`
 - `GET /api/routes/costs/{routePlanId}`
+- `GET /api/routes/summary`
+- `GET /api/routes/summary?factoryId=FAC-A`
 - `GET /api/routes/summary?date=YYYY-MM-DD`
-- `GET /api/outbox/events`
-- `GET /api/outbox/events/{eventId}`
+- `GET /api/routes/summary?factoryId=FAC-A&date=YYYY-MM-DD`
 - `GET /api/outbox/summary`
 - `POST /api/outbox/publish`
-- `POST /api/outbox/retry-failed`
-- `POST /api/batch/outbox-publish/run`
-- `GET /api/batch/jobs`
 - `GET /api/operations/summary`
 - `GET /actuator/health`
-- `GET /actuator/metrics`
-- `GET /actuator/prometheus`
 
-## Ledger Compatibility Mode
+## /api/routes/summary 500 이슈
 
-Default mode is `ARCHIVE_LEDGER_V1_COMPAT`.
+초기 구현에서 `date`, `factoryId`를 nullable 바인딩하는 JPQL 조건식으로 인해 PostgreSQL에서 `could not determine data type` 500 에러가 발생할 수 있었습니다.  
+현재는 nullable 조건 분기 쿼리를 제거하고 날짜/팩토리 조합별 조회 분기 경로로 전환하여 해결했습니다.
+
+## Ledger 연동
+
+기본값:
 
 ```yaml
 archive:
@@ -94,23 +67,7 @@ archive:
     contract-mode: ARCHIVE_LEDGER_V1_COMPAT
 ```
 
-In this mode, Archive-Logitics publishes a JSON array to Archive-Ledger's existing `/api/events/nexus/bulk` API. The output `eventType` is `LOGISTICS_DISPATCHED`, `source` is `Archive-Logitics`, and payload includes `estimatedCost`, `totalCost`, `vendorId`, `severity`, and `requiresApproval` for Ledger normalization.
-
-`LOGISTICS_CONFIRMED_NATIVE` is reserved for a future Ledger endpoint such as `/api/events/logistics/bulk`.
-
-## Outbox and Batch
-
-Incoming events are processed into `route_plan`, `route_cost`, and `logistics_outbox_event` in one event-level transaction. Ledger publishing is isolated through a PostgreSQL DB Outbox. Ledger downtime does not stop ingestion.
-
-When `archive.ledger.enabled=false`, `/api/outbox/publish` returns `DRY_RUN` and does not modify outbox status. When enabled, the publisher posts to Ledger and marks events `PUBLISHED`, `RETRY`, or `FAILED`.
-
-Spring Batch exposes `outboxPublishJob` through:
-
-```powershell
-curl.exe -X POST http://localhost:8092/api/batch/outbox-publish/run
-```
-
-The scheduler is off by default and only runs when `archive.outbox.scheduler.enabled=true`.
+`enabled=false` 상태에서는 `/api/outbox/publish` 응답이 `DRY_RUN`이며 외부 전송을 하지 않습니다.
 
 ## Quick Demo
 
@@ -123,18 +80,13 @@ curl.exe -X POST http://localhost:8092/api/outbox/publish
 curl.exe "http://localhost:8092/api/routes/plans?page=0&size=20"
 ```
 
-## OCI-lite Profile
+## OCI-lite
 
-`application-oci-lite.yml` reduces pool and batch pressure for later OCI free-tier deployment. Example:
+`application-oci-lite.yml`는 저메모리 배포를 위한 설정 템플릿입니다.
 
-```powershell
-$env:SPRING_PROFILES_ACTIVE="oci-lite"
-$env:JAVA_OPTS="-Xms128m -Xmx384m"
-$env:DB_POOL_SIZE="3"
-$env:ARCHIVE_OUTBOX_CHUNK_SIZE="20"
-$env:ARCHIVE_OUTBOX_SCHEDULER_ENABLED="false"
-```
+- JVM: `-Xms128m -Xmx384m`
+- Hikari 풀/Batch 청크/스케줄러/재시도 제한 축소
 
 ## Portfolio Line
 
-Archive-Logitics - Java/Spring Synthetic Logistics Event Backend: implemented a PostgreSQL/Flyway Outbox-based logistics event service that converts Archive-Nexus shipment events into deterministic synthetic route/cost facts and publishes Ledger-compatible cost events with idempotency, batch publishing, failure isolation, audit logs, and Actuator operations APIs.
+Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다. PostgreSQL + Flyway 기반 Outbox Pattern, idempotency key 중복 방지, Spring Batch Publisher, Ledger 장애 격리, Actuator 운영 요약 API를 통해 제조 → 물류 → 정산 흐름을 안정적으로 연결했습니다.

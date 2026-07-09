@@ -55,7 +55,12 @@ public class RoutePlanService {
     public RouteAggregateSummaryResponse summary(LocalDate date, String factoryId) {
         LocalDateTime start = date == null ? null : date.atStartOfDay();
         LocalDateTime end = date == null ? null : date.plusDays(1).atStartOfDay();
-        var plans = routePlanRepository.findForSummary(blankToNull(factoryId), start, end);
+        String factory = blankToNull(factoryId);
+        var plans = (date == null)
+                ? (factory == null ? routePlanRepository.findAll()
+                    : routePlanRepository.findByFactoryId(factory))
+                : (factory == null ? routePlanRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end)
+                    : routePlanRepository.findByFactoryIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(factory, start, end));
         var costs = routeCostRepository.findByRoutePlanIdIn(plans.stream().map(RoutePlanEntity::routePlanId).toList())
                 .stream()
                 .collect(Collectors.toMap(RouteCostEntity::routePlanId, Function.identity()));
@@ -65,7 +70,7 @@ public class RoutePlanService {
         long coldChainRisk = plans.stream().filter(plan -> plan.requiresColdChain() && plan.delayed()).count();
         long approvalRequired = costs.values().stream().filter(RouteCostEntity::requiresApproval).count();
         long totalCost = costs.values().stream().mapToLong(RouteCostEntity::totalCost).sum();
-        return new RouteAggregateSummaryResponse(date, blankToNull(factoryId), plans.size(), delayed, deviated,
+        return new RouteAggregateSummaryResponse(date, factory, plans.size(), delayed, deviated,
                 approvalRequired, coldChainRisk, totalCost);
     }
 

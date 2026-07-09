@@ -44,3 +44,14 @@ The response is a dry-run result and no external Ledger request is sent.
 ```powershell
 curl.exe http://localhost:8092/api/operations/summary
 ```
+
+8. Verify summary variants (요약 API 스모크).
+
+```powershell
+curl.exe "http://localhost:8092/api/routes/summary"
+curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A"
+curl.exe "http://localhost:8092/api/routes/summary?date=2026-01-15"
+curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A&date=2026-01-15"
+```
+
+All responses should return HTTP 200 and include `routePlans` aggregation.
