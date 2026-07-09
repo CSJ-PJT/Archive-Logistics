@@ -1,7 +1,7 @@
 # Archive-Logitics
 
 <p align="center">
-  <img src="./docs/assets/logo.png" alt="ArchiveOS logo" width="220" />
+  <img src="./docs/assets/logo.png" alt="ArchiveOS Logo" width="240" style="max-width: 280px; width: 40%; height: auto;" />
 </p>
 
 Archive-Logitics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다.  
