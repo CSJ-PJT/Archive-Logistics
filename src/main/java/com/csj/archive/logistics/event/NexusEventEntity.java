@@ -111,6 +111,10 @@ public class NexusEventEntity {
         return eventType;
     }
 
+    public JsonNode payload() {
+        return payload;
+    }
+
     public NexusEventStatus status() {
         return status;
     }

@@ -89,12 +89,26 @@ POST /api/outbox/retry-failed
 
 `POST /api/outbox/publish` sends publishable outbox rows to Archive-Ledger when `archive.ledger.enabled=true`. The default native endpoint is `POST http://localhost:18080/api/events/logistics/bulk`. When Ledger is disabled, it returns dry-run output without an external call.
 
+## Nexus Daily Settlement
+
+```http
+POST /api/settlements/nexus-daily/run
+POST /api/settlements/nexus-daily/run?date=2026-07-09
+POST /api/settlements/nexus-daily/run?date=2026-07-09&factoryId=FAC-A
+GET /api/settlements/nexus-daily
+GET /api/settlements/nexus-daily/summary
+GET /api/settlements/nexus-daily/{settlementId}
+```
+
+Creates daily manufacturing compensation callbacks for Archive-Nexus from route costs whose Logistics outbox event is already `PUBLISHED` to Archive-Ledger.
+
 ## Batch
 
 ```http
 POST /api/batch/outbox-publish/run
+POST /api/batch/nexus-daily-settlement/run
 GET /api/batch/jobs
 GET /api/batch/jobs/{executionId}
 ```
 
-Used for explicit Spring Batch publisher execution and job inspection.
+Used for explicit Spring Batch publisher, Nexus daily settlement execution, and job inspection.

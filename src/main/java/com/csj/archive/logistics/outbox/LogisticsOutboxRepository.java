@@ -16,6 +16,8 @@ public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutbox
 
     Optional<LogisticsOutboxEntity> findByAggregateId(String aggregateId);
 
+    List<LogisticsOutboxEntity> findByAggregateIdIn(Collection<String> aggregateIds);
+
     Page<LogisticsOutboxEntity> findByStatus(OutboxStatus status, Pageable pageable);
 
     List<LogisticsOutboxEntity> findByStatus(OutboxStatus status);

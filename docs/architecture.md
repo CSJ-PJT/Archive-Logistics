@@ -3,7 +3,7 @@
 Archive-Logistics is the logistics event transformation service in the Archive Platform Ecosystem.
 
 ```text
-Archive-Nexus -> Archive-Logistics -> Archive-Ledger -> ArchiveOS
+Archive-Nexus -> Archive-Logistics -> Archive-Ledger -> Nexus Daily Settlement -> ArchiveOS
 ```
 
 ## Responsibility Boundary
@@ -18,6 +18,7 @@ Archive-Logistics owns only logistics event processing.
 - Store publish targets in PostgreSQL outbox
 - Publish outbox events through Spring Batch / service publisher
 - Send Ledger native logistics bulk events to `/api/events/logistics/bulk`
+- Create Nexus daily manufacturing compensation callbacks from Ledger-published logistics costs
 - Provide operations, route summary, outbox summary, health, and audit visibility
 - Serve a lightweight operations dashboard from `/` and `/dashboard.html`
 
@@ -33,9 +34,11 @@ Archive-Logistics does not own Ledger domain tables such as financial transactio
 6. A Ledger-compatible payload is stored in `logistics_outbox_event`.
 7. A manual API call, explicit Spring Batch job, or opt-in scheduler publishes eligible outbox events.
 8. Archive-Ledger receives logistics cost events and can create finance transactions for daily settlement and reconciliation.
-9. Publish attempts are recorded in `ledger_publish_attempt`.
-10. Audit records are stored in `audit_log`.
-11. The operations dashboard reads summary APIs and visualizes Nexus -> Logistics -> Outbox -> Ledger -> ArchiveOS flow.
+9. The Nexus daily settlement batch calculates manufacturing compensation only from route costs whose Logistics outbox is already `PUBLISHED`.
+10. Archive-Logistics sends an idempotent daily settlement callback to Archive-Nexus.
+11. Publish attempts are recorded in `ledger_publish_attempt`.
+12. Audit records are stored in `audit_log`.
+13. The operations dashboard reads summary APIs and visualizes Nexus -> Logistics -> Outbox -> Ledger -> Nexus Settlement -> ArchiveOS flow.
 
 ## Failure Isolation
 

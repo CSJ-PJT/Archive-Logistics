@@ -111,6 +111,35 @@ curl.exe -X POST "http://localhost:18080/api/reconciliation/daily?date=YYYY-MM-D
 curl.exe http://localhost:18080/api/reconciliation/summary
 ```
 
+## If Nexus Daily Settlement Fails
+
+Archive-Logistics can compensate Archive-Nexus from logistics costs that have already been published to Ledger.
+
+Run:
+
+```powershell
+curl.exe -X POST "http://localhost:8092/api/settlements/nexus-daily/run?date=YYYY-MM-DD"
+curl.exe http://localhost:8092/api/settlements/nexus-daily/summary
+```
+
+Expected behavior:
+
+- only route plans with `logistics_outbox_event.status=PUBLISHED` are included
+- `enabled=false` records `DRY_RUN`
+- Nexus unavailable records `RETRY` or `FAILED`
+- duplicate already-sent settlements are skipped safely
+
+Check configuration:
+
+```yaml
+archive:
+  nexus-settlement:
+    enabled: true
+    base-url: http://localhost:8080
+    daily-endpoint: /api/logistics/settlements/daily
+    manufacturing-share-rate: 0.3000
+```
+
 ## If Nexus Events Fail
 
 Check:

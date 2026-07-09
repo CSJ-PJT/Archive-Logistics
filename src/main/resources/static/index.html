@@ -19,6 +19,7 @@
       <button id="refreshButton" type="button">Refresh</button>
       <button id="simulateButton" type="button">Simulate 100</button>
       <button id="publishButton" type="button">Publish Outbox</button>
+      <button id="settlementButton" type="button">Run Nexus Settlement</button>
     </div>
   </header>
 
@@ -69,6 +70,12 @@
       </article>
       <article class="stage">
         <span class="stage-label">5</span>
+        <h2>Nexus Settlement</h2>
+        <p>daily manufacturing payout callback</p>
+        <strong id="nexusSettlementStatus">-</strong>
+      </article>
+      <article class="stage">
+        <span class="stage-label">6</span>
         <h2>ArchiveOS</h2>
         <p>승인/감사/운영 관제 참조</p>
         <strong id="approvalRequired">0</strong>
@@ -141,6 +148,19 @@
           <div><dt>Enabled</dt><dd id="ledgerEnabled">-</dd></div>
           <div><dt>Contract</dt><dd id="contractMode">-</dd></div>
           <div><dt>Last Publish</dt><dd id="lastPublish">not requested</dd></div>
+        </dl>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Nexus Daily Settlement</h2>
+          <span id="nexusSettlementMode">manual batch</span>
+        </div>
+        <dl class="details">
+          <div><dt>Rows</dt><dd id="nexusSettlementRows">0</dd></div>
+          <div><dt>Sent / Dry Run</dt><dd id="nexusSettlementSent">0 / 0</dd></div>
+          <div><dt>Manufacturing Cost</dt><dd id="nexusManufacturingCost">0 KRW</dd></div>
+          <div><dt>Last Run</dt><dd id="lastNexusSettlement">not requested</dd></div>
         </dl>
       </article>
     </section>

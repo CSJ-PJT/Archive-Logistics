@@ -9,12 +9,15 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,13 +30,16 @@ public class BatchJobController {
     private final JobLauncher jobLauncher;
     private final JobExplorer jobExplorer;
     private final Job outboxPublishJob;
+    private final Job nexusDailySettlementJob;
 
     public BatchJobController(JobLauncher jobLauncher,
                               JobExplorer jobExplorer,
-                              @Qualifier("outboxPublishJob") Job outboxPublishJob) {
+                              @Qualifier("outboxPublishJob") Job outboxPublishJob,
+                              @Qualifier("nexusDailySettlementJob") Job nexusDailySettlementJob) {
         this.jobLauncher = jobLauncher;
         this.jobExplorer = jobExplorer;
         this.outboxPublishJob = outboxPublishJob;
+        this.nexusDailySettlementJob = nexusDailySettlementJob;
     }
 
     @PostMapping("/outbox-publish/run")
@@ -42,6 +48,23 @@ public class BatchJobController {
                 .addString("requestId", UUID.randomUUID().toString())
                 .addLong("requestedAt", System.currentTimeMillis())
                 .toJobParameters());
+        return ApiResponse.ok(execution(execution));
+    }
+
+    @PostMapping("/nexus-daily-settlement/run")
+    public ApiResponse<Map<String, Object>> runNexusDailySettlementJob(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String factoryId) throws Exception {
+        JobParametersBuilder parameters = new JobParametersBuilder()
+                .addString("requestId", UUID.randomUUID().toString())
+                .addLong("requestedAt", System.currentTimeMillis());
+        if (date != null) {
+            parameters.addString("settlementDate", date.toString());
+        }
+        if (factoryId != null && !factoryId.isBlank()) {
+            parameters.addString("factoryId", factoryId);
+        }
+        JobExecution execution = jobLauncher.run(nexusDailySettlementJob, parameters.toJobParameters());
         return ApiResponse.ok(execution(execution));
     }
 

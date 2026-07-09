@@ -80,6 +80,50 @@ Compatibility mode may publish `LOGISTICS_DISPATCHED` shaped payloads when `ARCH
 
 Ledger uses these events to create finance transactions, ledger entries, daily settlement targets, and reconciliation counts. Archive-Logistics does not create Ledger settlement or reconciliation rows directly.
 
+## Nexus Daily Settlement Callback
+
+After Logistics cost events are published to Ledger, Archive-Logistics can send a daily manufacturing compensation callback to Archive-Nexus.
+
+```http
+POST http://localhost:8080/api/logistics/settlements/daily
+Content-Type: application/json
+```
+
+```json
+{
+  "settlementId": "LGS-SETTLE-20260709-FAC-A",
+  "idempotencyKey": "LOGISTICS:DAILY:2026-07-09:FAC-A",
+  "source": "Archive-Logistics",
+  "schemaVersion": 1,
+  "settlementDate": "2026-07-09",
+  "factoryId": "FAC-A",
+  "currency": "KRW",
+  "totalShipments": 120,
+  "delayedShipments": 18,
+  "heldShipments": 3,
+  "totalQuantity": 8400,
+  "totalLogisticsCost": 4200000,
+  "manufacturingImpactCost": 1260000,
+  "onTimeRate": 0.8500,
+  "evidence": {
+    "basis": "published synthetic daily route cost summary",
+    "settlementBasis": "logistics_outbox_event.status=PUBLISHED",
+    "manufacturingShareRate": 0.3000
+  },
+  "payload": {
+    "syntheticData": true,
+    "settlementRole": "Manufacturing compensation callback from Logistics to Nexus"
+  },
+  "occurredAt": "2026-07-09T10:00:00Z"
+}
+```
+
+Nexus settlement idempotency:
+
+```text
+LOGISTICS:DAILY:{settlementDate}:{factoryId}
+```
+
 ## Idempotency
 
 Nexus input idempotency:

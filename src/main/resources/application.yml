@@ -60,3 +60,10 @@ archive:
     scheduler:
       enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:false}
       fixed-delay-ms: ${ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS:30000}
+  nexus-settlement:
+    enabled: ${ARCHIVE_NEXUS_SETTLEMENT_ENABLED:false}
+    base-url: ${ARCHIVE_NEXUS_BASE_URL:http://localhost:8080}
+    daily-endpoint: ${ARCHIVE_NEXUS_DAILY_SETTLEMENT_ENDPOINT:/api/logistics/settlements/daily}
+    publish-timeout-ms: ${ARCHIVE_NEXUS_SETTLEMENT_TIMEOUT_MS:30000}
+    max-retry-count: ${ARCHIVE_NEXUS_SETTLEMENT_MAX_RETRY_COUNT:5}
+    manufacturing-share-rate: ${ARCHIVE_NEXUS_MANUFACTURING_SHARE_RATE:0.3000}

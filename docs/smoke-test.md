@@ -62,6 +62,8 @@ Expected:
 ```powershell
 curl.exe http://localhost:8092/api/outbox/summary
 curl.exe -X POST http://localhost:8092/api/outbox/publish
+curl.exe -X POST "http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09"
+curl.exe http://localhost:8092/api/settlements/nexus-daily/summary
 ```
 
 Expected when Ledger is enabled and reachable:

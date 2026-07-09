@@ -2,6 +2,7 @@ const state = {
   operations: null,
   routeSummary: null,
   outbox: null,
+  nexusSettlement: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -46,6 +47,14 @@ async function request(path, options = {}) {
   }
 
   return response.json();
+}
+
+async function optionalRequest(path) {
+  try {
+    return await request(path);
+  } catch (error) {
+    return { error };
+  }
 }
 
 function routeSummaryUrl() {
@@ -129,19 +138,44 @@ function updateOutbox(payload) {
   $("barSkipped").style.width = percent(skipped);
 }
 
+function updateNexusSettlement(payload) {
+  if (payload.error) {
+    setText("nexusSettlementStatus", "ERROR");
+    setText("nexusSettlementMode", payload.error.message);
+    return;
+  }
+
+  const data = payload.data || {};
+  state.nexusSettlement = data;
+
+  const totalRows = Number(data.totalSettlements || 0);
+  const sent = Number(data.sent || 0);
+  const dryRun = Number(data.dryRun || 0);
+  const retry = Number(data.retry || 0);
+  const failed = Number(data.failed || 0);
+
+  setText("nexusSettlementRows", formatNumber(totalRows));
+  setText("nexusSettlementSent", `${formatNumber(sent)} / ${formatNumber(dryRun)}`);
+  setText("nexusManufacturingCost", formatCurrency(data.totalManufacturingImpactCost));
+  setText("nexusSettlementStatus", failed ? "FAILED" : retry ? "RETRY" : sent ? "SENT" : dryRun ? "DRY_RUN" : "READY");
+  setText("nexusSettlementMode", "PUBLISHED outbox basis");
+}
+
 async function refresh() {
   $("refreshButton").disabled = true;
   try {
-    const [operations, routeSummary, outbox] = await Promise.all([
+    const [operations, routeSummary, outbox, nexusSettlement] = await Promise.all([
       request("/api/operations/summary"),
       request(routeSummaryUrl()),
       request("/api/outbox/summary"),
+      optionalRequest("/api/settlements/nexus-daily/summary"),
     ]);
 
     updateOperations(operations);
     updateRouteSummary(routeSummary);
     updateOutbox(outbox);
-    logActivity("Refresh", "operations, route summary, outbox summary loaded");
+    updateNexusSettlement(nexusSettlement);
+    logActivity("Refresh", "operations, route, outbox, settlement summary loaded");
   } catch (error) {
     logActivity("Refresh failed", error.message);
   } finally {
@@ -178,10 +212,26 @@ async function publishOutbox() {
   }
 }
 
+async function runNexusSettlement() {
+  $("settlementButton").disabled = true;
+  try {
+    const result = await request("/api/settlements/nexus-daily/run", { method: "POST" });
+    const data = result.data || {};
+    setText("lastNexusSettlement", `${data.sentCount || 0} sent / ${data.dryRunCount || 0} dry-run / ${data.skippedCount || 0} skipped`);
+    logActivity("Nexus Settlement", `date ${data.settlementDate || "-"} | factories ${formatNumber(data.requestedFactoryCount)}`);
+    await refresh();
+  } catch (error) {
+    logActivity("Nexus settlement failed", error.message);
+  } finally {
+    $("settlementButton").disabled = false;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   $("refreshButton").addEventListener("click", refresh);
   $("simulateButton").addEventListener("click", simulate);
   $("publishButton").addEventListener("click", publishOutbox);
+  $("settlementButton").addEventListener("click", runNexusSettlement);
   $("routeFilter").addEventListener("submit", (event) => {
     event.preventDefault();
     refresh();

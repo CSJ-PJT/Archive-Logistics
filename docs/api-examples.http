@@ -13,6 +13,15 @@ GET http://localhost:8092/api/outbox/summary
 ### Outbox Publish
 POST http://localhost:8092/api/outbox/publish
 
+### Nexus Daily Settlement Run
+POST http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09
+
+### Nexus Daily Settlement Summary
+GET http://localhost:8092/api/settlements/nexus-daily/summary
+
+### Nexus Daily Settlement Batch
+POST http://localhost:8092/api/batch/nexus-daily-settlement/run?date=2026-07-09
+
 ### Routes
 GET http://localhost:8092/api/routes/plans?page=0&size=20
 

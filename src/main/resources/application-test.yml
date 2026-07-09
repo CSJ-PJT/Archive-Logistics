@@ -20,3 +20,10 @@ archive:
     max-retry-count: 5
     scheduler:
       enabled: false
+  nexus-settlement:
+    enabled: false
+    base-url: http://localhost:8080
+    daily-endpoint: /api/logistics/settlements/daily
+    publish-timeout-ms: 30000
+    max-retry-count: 5
+    manufacturing-share-rate: 0.3000
