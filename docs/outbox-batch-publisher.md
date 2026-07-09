@@ -97,12 +97,12 @@ Default Ledger publish contract:
 archive:
   ledger:
     enabled: true
-    base-url: http://localhost:18080
+    base-url: http://localhost:8093
     bulk-endpoint: /api/events/logistics/bulk
     contract-mode: LOGISTICS_CONFIRMED_NATIVE
 ```
 
-Docker uses `http://host.docker.internal:18080` by default so the Logistics container can reach a Ledger process running on the host.
+Docker uses `http://host.docker.internal:8093` by default so the Logistics container can reach a Ledger process running on the host.
 
 ## Manual Publish
 

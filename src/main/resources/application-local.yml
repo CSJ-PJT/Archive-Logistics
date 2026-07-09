@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15434/archive_logitics}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/archive_logitics}
     username: ${SPRING_DATASOURCE_USERNAME:archive}
     password: ${SPRING_DATASOURCE_PASSWORD:archive}
     hikari:
@@ -16,12 +16,12 @@ logging:
 archive:
   ledger:
     enabled: ${ARCHIVE_LEDGER_ENABLED:true}
-    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
+    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:8093}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
     contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}
   outbox:
     scheduler:
-      enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:false}
+      enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:true}
       fixed-delay-ms: ${ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS:30000}
   nexus-settlement:
     enabled: ${ARCHIVE_NEXUS_SETTLEMENT_ENABLED:true}
@@ -30,3 +30,8 @@ archive:
     publish-timeout-ms: ${ARCHIVE_NEXUS_SETTLEMENT_TIMEOUT_MS:30000}
     max-retry-count: ${ARCHIVE_NEXUS_SETTLEMENT_MAX_RETRY_COUNT:5}
     manufacturing-share-rate: ${ARCHIVE_NEXUS_MANUFACTURING_SHARE_RATE:0.3000}
+    scheduler:
+      enabled: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_ENABLED:true}
+      fixed-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_FIXED_DELAY_MS:300000}
+      initial-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_INITIAL_DELAY_MS:45000}
+      date-offset-days: ${ARCHIVE_NEXUS_SETTLEMENT_DATE_OFFSET_DAYS:0}

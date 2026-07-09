@@ -132,4 +132,59 @@ class NexusDailySettlementServiceTest {
         assertThat(request.onTimeRate()).isEqualByComparingTo("1.0000");
         assertThat(request.payload()).containsEntry("syntheticData", true);
     }
+
+    @Test
+    void settlementCandidatesAreReadyOnlyAfterEveryOutboxRowIsPublished() {
+        NexusDailySettlementService service = new NexusDailySettlementService(
+                settlementRepository,
+                routePlanRepository,
+                routeCostRepository,
+                outboxRepository,
+                nexusEventRepository,
+                nexusClient,
+                new NexusSettlementProperties(),
+                auditLogService,
+                clock
+        );
+        LocalDate date = LocalDate.of(2026, 7, 9);
+        LocalDateTime now = LocalDateTime.of(2026, 7, 9, 10, 0);
+        RoutePlanEntity plan = new RoutePlanEntity(new RoutePlan(
+                "ROUTE-READY",
+                "evt-nexus-ready",
+                "SHIP-READY",
+                "FAC-A",
+                "FAC-A",
+                "DC-SEOUL-01",
+                "VENDOR-LOGISTICS-01",
+                new BigDecimal("42.00"),
+                67,
+                "NORMAL",
+                new BigDecimal("0.1200"),
+                false,
+                false,
+                false,
+                "COST_CONFIRMED",
+                new RouteCost(60_900, 2_520, 0, 0, 0, 100_000, "KRW", false, "test")
+        ), now);
+        LogisticsOutboxEntity outbox = new LogisticsOutboxEntity(new LogisticsOutboxEvent(
+                "evt-logistics-ready",
+                "LOGISTICS:LOGISTICS_COST_CONFIRMED:ROUTE-READY",
+                "Archive-Logistics",
+                "LOGISTICS_COST_CONFIRMED",
+                "ROUTE_PLAN",
+                "ROUTE-READY",
+                objectMapper.createObjectNode()
+        ), now);
+
+        when(routePlanRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
+                .thenReturn(List.of(plan));
+        when(outboxRepository.findByAggregateIdIn(List.of("ROUTE-READY"))).thenReturn(List.of(outbox));
+
+        assertThat(service.hasRunnableSettlementCandidates(date)).isFalse();
+
+        outbox.markPublished(now);
+        when(settlementRepository.findBySettlementDateAndFactoryId(date, "FAC-A")).thenReturn(Optional.empty());
+
+        assertThat(service.hasRunnableSettlementCandidates(date)).isTrue();
+    }
 }

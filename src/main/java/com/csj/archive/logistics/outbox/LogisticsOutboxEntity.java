@@ -126,6 +126,13 @@ public class LogisticsOutboxEntity {
         this.updatedAt = now;
     }
 
+    public void markSkipped(String reason, LocalDateTime now) {
+        this.status = OutboxStatus.SKIPPED;
+        this.lastError = reason;
+        this.nextRetryAt = null;
+        this.updatedAt = now;
+    }
+
     public Long id() {
         return id;
     }

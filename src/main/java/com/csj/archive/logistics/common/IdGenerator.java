@@ -40,6 +40,10 @@ public class IdGenerator {
         return "BATCH-" + today() + "-" + hash.shortHash(purpose + ":" + clock.instant());
     }
 
+    public String shortHash(String value) {
+        return hash.shortHash(value);
+    }
+
     private String today() {
         return LocalDate.now(clock).format(DATE_FORMAT);
     }

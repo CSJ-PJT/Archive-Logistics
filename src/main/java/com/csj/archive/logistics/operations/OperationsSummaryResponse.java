@@ -9,11 +9,14 @@ public record OperationsSummaryResponse(
         long duplicateEvents,
         long failedEvents,
         long routePlans,
+        Economy economy,
         Outbox outbox,
         Risk risk,
         Ledger ledger,
         Memory memory
 ) {
+    public record Economy(long totalRevenue, long totalCost, long totalProfit, long cashBalance, String bankruptcyRisk) {
+    }
     public record Outbox(long pending, long published, long failed, long retry, long skipped) {
     }
 

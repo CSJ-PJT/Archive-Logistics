@@ -14,7 +14,7 @@ Or run with local dependencies:
 .\gradlew.bat bootRun
 ```
 
-For real Ledger publish, run Archive-Ledger on `http://localhost:18080`.
+For real Ledger publish, run Archive-Ledger on `http://localhost:8093`.
 
 ## Health
 

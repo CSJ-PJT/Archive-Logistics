@@ -21,7 +21,7 @@ Included rows:
 
 This prevents Archive-Logistics from compensating Nexus for logistics costs that have not yet been delivered to Archive-Ledger.
 
-Operationally, run this batch after the daily logistics cut-off and after publishable outbox rows for the target date have been drained. A `SENT` settlement is treated as immutable to avoid duplicate manufacturing compensation callbacks. Late-arriving events should be handled by the next operational adjustment flow or by running the daily batch only after the ingestion window closes.
+Operationally, run this batch after the daily logistics cut-off and after publishable outbox rows for the target date have been drained. In automatic demo mode, the scheduler checks this condition and runs only when every route outbox row for the target date is `PUBLISHED`. A `SENT` settlement is treated as immutable to avoid duplicate manufacturing compensation callbacks. Late-arriving events should be handled by the next operational adjustment flow or by running the daily batch only after the ingestion window closes.
 
 ## Calculation
 
@@ -96,6 +96,11 @@ archive:
     daily-endpoint: /api/logistics/settlements/daily
     publish-timeout-ms: 30000
     max-retry-count: 5
+    scheduler:
+      enabled: true
+      fixed-delay-ms: 300000
+      initial-delay-ms: 45000
+      date-offset-days: 0
     manufacturing-share-rate: 0.3000
 ```
 

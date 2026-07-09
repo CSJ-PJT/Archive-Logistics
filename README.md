@@ -1,206 +1,145 @@
-# Archive-Logistics
+﻿# Archive-Logistics
 
-<p align="center">
-  <img src="./docs/assets/logo.png" alt="ArchiveOS Logo" width="240" style="max-width: 280px; width: 40%; height: auto;" />
-</p>
+![Logo](./docs/assets/logo.png)
 
-**출하 이벤트를 경로, ETA, 운송비로 변환해 Ledger로 발행하는 Spring Boot 물류 서비스**
+Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 받아
+합성(synthetic) 경로/ETA/운송비를 계산하고,
+정상 흐름이면 Archive-Ledger로 비용 확정 이벤트를 발행하는 물류 백엔드입니다.
 
-Archive-Logistics는 Archive Platform Ecosystem에서 물류 이벤트 변환 계층을 담당합니다. Archive-Nexus가 발행한 제조/출하 이벤트를 수신하고, deterministic synthetic route calculator로 route plan, ETA, 운송비, 지연/우회 비용을 계산한 뒤 Archive-Ledger가 처리할 수 있는 비용 확정 이벤트를 outbox에 저장하고 발행합니다.
+**외부 노출명은 항상 `Archive-Logistics`로 통일**합니다.  
+`Archive-Logitics`, `logitics`는 일부 내부 field나 히스토리 호환성을 위해 남아 있습니다.
 
-외부 표시명은 `Archive-Logistics`로 통일합니다. 일부 내부 source, class, artifact, outbox source에는 기존 계약 호환성을 위해 `Archive-Logitics` 또는 `logitics` 표기가 남아 있을 수 있습니다.
+## 핵심 역할
 
-## Operational Role
+- Archive-Nexus의 물류 이벤트 수신 (`/api/events/nexus*`)
+- 합성 라우트 계산 및 route/cost 생성
+- Outbox 기반 이벤트 적재와 배치 발행
+- Ledger 이벤트 및 정산/비용 이벤트 발행
+- 운영/건강 상태 요약, 감사 로그 기록
 
-- Nexus 물류 이벤트 수신
-- synthetic route / ETA / cost 계산
-- route_plan, route_cost 저장
-- PostgreSQL outbox 저장
-- Spring Batch Publisher 기반 Ledger publish
-- Ledger 장애/비활성 상태에서 DRY_RUN/SKIPPED 처리
-- route/cost/outbox/audit 운영 조회 제공
+## 운영 API
 
-## Stack
+### 상태/요약
 
-- Java 21
-- Spring Boot 3
-- Spring Web / Validation / Data JPA
-- PostgreSQL
-- Flyway
-- Spring Batch
-- Spring Actuator / Micrometer
-- Docker / Docker Compose
-- JUnit 5 / AssertJ / Testcontainers
+- `GET /actuator/health`
+- `GET /api/operations/summary`
+- `GET /api/routes/summary`
+- `GET /api/routes/summary?factoryId={factoryId}`
+- `GET /api/routes/summary?date=YYYY-MM-DD`
+- `GET /api/routes/summary?factoryId={factoryId}&date=YYYY-MM-DD`
+- `GET /api/outbox/summary`
+- `GET /api/logistics-economy/summary`
+- `GET /api/logistics-economy/revenue-events`
+- `GET /api/logistics-economy/cost-events`
+- `GET /api/logistics-economy/profit-snapshots`
+- `GET /api/logistics-settlements`
+- `GET /api/logistics-settlements/summary`
 
-## Main APIs
+### 이벤트 수신/시뮬레이션
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/operations/summary` | service, outbox, risk, ledger, memory 운영 요약 |
-| `GET` | `/api/routes/summary` | route/cost 집계 조회 |
-| `POST` | `/api/events/nexus/bulk` | Nexus bulk 물류 이벤트 수신 |
-| `POST` | `/api/events/nexus` | Nexus 단건 이벤트 수신 |
-| `POST` | `/api/simulations/shipments` | synthetic shipment 데모 데이터 생성 |
-| `GET` | `/api/outbox/summary` | outbox 상태 집계 |
-| `POST` | `/api/outbox/publish` | Ledger publish 또는 dry-run 처리 |
-| `POST` | `/api/settlements/nexus-daily/run` | Ledger published logistics cost 기준 Nexus 일 정산 실행 |
-| `GET` | `/api/settlements/nexus-daily/summary` | Nexus 일 정산 집계 |
-| `GET` | `/actuator/health` | actuator health |
+- `POST /api/events/nexus`
+- `POST /api/events/nexus/bulk`
+- `POST /api/simulations/shipments?count=100`
 
-## Operations Dashboard
+### 출고/정산 API
 
-Archive-Logistics includes a lightweight operational dashboard served by Spring Boot static resources.
+- `POST /api/logistics-settlements/daily/run?date=YYYY-MM-DD`
+- `GET /api/logistics-settlements/{settlementId}`
 
-- Dashboard: `http://localhost:8092/`
-- Alias: `http://localhost:8092/dashboard.html`
+### Outbox/API Publish
 
-The dashboard shows the end-to-end process:
+- `GET /api/outbox/events`
+- `GET /api/outbox/events/{eventId}`
+- `POST /api/outbox/publish`
+- `POST /api/outbox/retry-failed`
+- `POST /api/batch/outbox-publish/run`
+- `GET /api/batch/jobs`
+- `GET /api/batch/jobs/{executionId}`
 
-```text
-Archive-Nexus -> Route Calculator -> Outbox -> Archive-Ledger -> Nexus Settlement -> ArchiveOS
-```
+### Nexus 보조 정산(레거시)
 
-It reads existing APIs only:
+- `POST /api/settlements/nexus-daily/run`
+- `GET /api/settlements/nexus-daily/summary`
+- `GET /api/settlements/nexus-daily/{settlementId}`
+- `POST /api/batch/nexus-daily-settlement/run`
 
-- `/api/operations/summary`
-- `/api/routes/summary`
-- `/api/outbox/summary`
-- `/api/simulations/shipments`
-- `/api/outbox/publish`
-- `/api/settlements/nexus-daily/summary`
-- `/api/settlements/nexus-daily/run`
+## 아웃박스/Batch 동작
 
-## Ledger Publish Defaults
+- Outbox 상태: `PENDING`, `PUBLISHED`, `FAILED`, `RETRY`, `SKIPPED`
+- Ledger 미연동(`ARCHIVE_LEDGER_ENABLED=false`) 시 publish는 `DRY_RUN/SKIPPED`
+- 실패 이벤트는 `retry_count`, `last_error`, `next_retry_at`를 기록해 재시도
 
-Docker/local demo configuration is ready to publish real Logistics cost events to Archive-Ledger's native logistics API.
+스케줄러는 `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true`일 때만 동작합니다.
+로컬 default는 수동 또는 제한된 구간에서 운영 테스트를 권장합니다.
 
-```env
-ARCHIVE_LEDGER_ENABLED=true
-ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
-ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
-ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
-ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
-ARCHIVE_OUTBOX_SCHEDULER_ENABLED=false
-ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS=30000
-```
+## 합성 데이터 정책
 
-With these values, `POST /api/outbox/publish` and `outboxPublishJob` send pending Logistics outbox events to Archive-Ledger. The scheduler remains opt-in; set `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true` only when automatic publish is intended. Set `ARCHIVE_LEDGER_ENABLED=false` for dry-run/fault-isolation scenarios.
+- 실제 지도 API, 실제 차량/주소/배송/개인정보는 사용하지 않습니다.
+- Factory/도착지/벤더 코드는 전부 synthetic 값입니다.
+- route 계산은 deterministic matrix/hash 기반입니다.
 
-## Nexus Daily Settlement
+## `/api/routes/summary` 500 이슈
 
-Archive-Logistics는 Ledger로 발행 완료된 물류비를 기준으로 Archive-Nexus 제조 보상 일 정산 콜백을 생성합니다. 산정 대상은 `logistics_outbox_event.status=PUBLISHED`인 route plan만 포함하며, 기본 제조 보상 비율은 `0.3000`입니다.
+`factoryId`, `date` 쿼리 조합에서 발생하던 `could not determine data type` 이슈는
+`summary` 조회를 경로별 분기 처리(조건별 쿼리)로 완전 해결했습니다.
+아래 조합은 모두 200입니다.
 
-운영에서는 대상 날짜의 outbox publish가 완료된 뒤 일 정산을 실행합니다. 이미 `SENT`된 날짜/공장 정산은 중복 보상 방지를 위해 불변으로 취급합니다.
+- `GET /api/routes/summary`
+- `GET /api/routes/summary?factoryId=FAC-A`
+- `GET /api/routes/summary?date=YYYY-MM-DD`
+- `GET /api/routes/summary?factoryId=FAC-A&date=YYYY-MM-DD`
 
-```env
-ARCHIVE_NEXUS_SETTLEMENT_ENABLED=true
-ARCHIVE_NEXUS_BASE_URL=http://localhost:8080
-ARCHIVE_NEXUS_DAILY_SETTLEMENT_ENDPOINT=/api/logistics/settlements/daily
-ARCHIVE_NEXUS_MANUFACTURING_SHARE_RATE=0.3000
-```
+## 로컬 실행
 
-```powershell
-curl.exe -X POST "http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09"
-curl.exe http://localhost:8092/api/settlements/nexus-daily/summary
-curl.exe -X POST "http://localhost:8092/api/batch/nexus-daily-settlement/run?date=2026-07-09"
-```
-
-자세한 계약과 장애 처리는 [nexus-daily-settlement.md](docs/nexus-daily-settlement.md)를 참고합니다.
-
-## Failure Isolation
-
-Operational Ledger publish defaults:
-
-- `archive.ledger.enabled=true`: publisher calls Archive-Ledger `POST /api/events/logistics/bulk`.
-- default local Ledger URL: `http://localhost:18080`
-- default Docker Ledger URL: `http://host.docker.internal:18080`
-- scheduler remains disabled unless `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true`.
-
-Ledger 연동은 DB Outbox Pattern으로 격리합니다. Nexus 이벤트 수신과 route/cost 계산은 하나의 트랜잭션에서 처리하고, 외부 Ledger 발행은 outbox publisher가 별도로 수행합니다.
-
-- `archive.ledger.enabled=false`: 외부 호출 없이 DRY_RUN/SKIPPED 처리
-- Ledger 장애: Archive-Logistics API는 생존, outbox에 실패 상태 저장
-- 재시도 추적: `retry_count`, `last_error`, `next_retry_at`
-- 최대 재시도 이후 `FAILED` 상태 전환
-- publish attempt는 `ledger_publish_attempt`에 기록
-
-## `/api/routes/summary` Fix
-
-초기 구현에서는 nullable `date`, `factoryId`를 JPQL 조건에 직접 바인딩하면서 PostgreSQL JDBC가 파라미터 타입을 추론하지 못해 `could not determine data type` 500 오류가 발생할 수 있었습니다.
-
-현재는 조건 조합별 Repository/Service 분기 로직으로 전환했습니다.
-
-- `GET /api/routes/summary` -> HTTP 200
-- `GET /api/routes/summary?factoryId=FAC-A` -> HTTP 200
-- `GET /api/routes/summary?date=2026-01-15` -> HTTP 200
-- `GET /api/routes/summary?factoryId=FAC-A&date=2026-01-15` -> HTTP 200
-
-자세한 내용은 [routes-summary-fix.md](docs/routes-summary-fix.md)를 참고합니다.
-
-## Local Run
-
-```powershell
+```bash
+cp .env.example .env   # 선택
 docker compose up --build
 ```
 
-또는 로컬 PostgreSQL이 준비된 상태에서:
+또는
 
-```powershell
-.\gradlew.bat bootRun
+```bash
+./gradlew.bat bootRun
 ```
 
-기본 포트:
+기본 포트: `8092`
 
-- App: `http://localhost:8092`
-- PostgreSQL: `localhost:5434`
-- Expected Ledger: `http://localhost:18080`
+권장 환경변수:
 
-## Smoke Test
+- `SPRING_PROFILES_ACTIVE=local`
+- `ARCHIVE_LEDGER_ENABLED=true` (Ledger 실서비스 연동 시)
+- `ARCHIVE_LEDGER_BASE_URL=http://localhost:8093` 또는 `host.docker.internal:8093`
+- `ARCHIVE_NEXUS_SETTLEMENT_ENABLED=true`
+
+## Smoke 체크
 
 ```powershell
 curl.exe http://localhost:8092/actuator/health
-curl.exe http://localhost:8092/
 curl.exe http://localhost:8092/api/operations/summary
-curl.exe -X POST "http://localhost:8092/api/simulations/shipments?count=100"
 curl.exe http://localhost:8092/api/routes/summary
 curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A"
 curl.exe "http://localhost:8092/api/routes/summary?date=2026-01-15"
 curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A&date=2026-01-15"
 curl.exe http://localhost:8092/api/outbox/summary
-curl.exe -X POST http://localhost:8092/api/outbox/publish
-curl.exe -X POST "http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09"
-curl.exe http://localhost:8092/api/settlements/nexus-daily/summary
+curl.exe -X POST "http://localhost:8092/api/simulations/shipments?count=100"
+curl.exe -X POST "http://localhost:8092/api/outbox/publish"
+curl.exe -X POST "http://localhost:8092/api/logistics-settlements/daily/run?date=2026-01-15"
+curl.exe http://localhost:8092/api/logistics-economy/summary
 ```
 
-Docker/local demo defaults are ready for real Ledger native publish. Run Archive-Ledger on `http://localhost:18080`, then call `POST /api/outbox/publish`. If `ARCHIVE_LEDGER_ENABLED=false`, publish ends as DRY_RUN/SKIPPED without an external call. If Ledger is enabled but unreachable, outbox retry metadata is recorded.
+## 문서
 
-## Runbook
-
-운영 점검 순서:
-
-1. `GET /actuator/health`로 JVM/Spring 상태를 확인합니다.
-2. `GET /api/operations/summary`에서 `failedEvents`, `outbox.failed`, `outbox.retry`, `ledger.status`를 확인합니다.
-3. `GET /api/routes/summary`로 route/cost 집계가 정상인지 확인합니다.
-4. `GET /api/outbox/summary`로 pending/retry/failed 비율을 확인합니다.
-5. `ledger.enabled=true`, `contractMode=LOGISTICS_CONFIRMED_NATIVE`, `bulkEndpoint=/api/events/logistics/bulk`인지 확인합니다.
-6. 실패가 증가하면 `last_error`, `retry_count`, `ledger_publish_attempt`를 확인합니다.
-
-상세 운영 절차는 [operations-runbook.md](docs/operations-runbook.md)를 참고합니다.
-
-## Documentation
-
-- [Architecture](docs/architecture.md)
-- [Event Contract](docs/event-contract.md)
-- [Route Summary Fix](docs/routes-summary-fix.md)
-- [Outbox Batch Publisher](docs/outbox-batch-publisher.md)
-- [Ledger Integration](docs/ledger-integration.md)
-- [Nexus Daily Settlement](docs/nexus-daily-settlement.md)
-- [API Reference](docs/api-reference.md)
-- [Smoke Test](docs/smoke-test.md)
-- [Operations Runbook](docs/operations-runbook.md)
-- [OCI Lite Profile](docs/oci-lite-profile.md)
-- [API Examples](docs/api-examples.http)
-
-## Synthetic Data Policy
-
-Archive-Logistics는 실제 지도 API, 실제 배송 데이터, 실제 차량 데이터, 실제 주소, 개인정보를 사용하지 않습니다. 모든 route, ETA, cost, risk는 synthetic matrix와 deterministic hash로 계산됩니다.
+- [Architecture](./docs/architecture.md)
+- [Event Contract](./docs/event-contract.md)
+- [API Reference](./docs/api-reference.md)
+- [Route Summary Fix](./docs/routes-summary-fix.md)
+- [Outbox Batch Publisher](./docs/outbox-batch-publisher.md)
+- [Ledger Integration](./docs/ledger-integration.md)
+- [Nexus Daily Settlement](./docs/nexus-daily-settlement.md)
+- [Logistics Economy Model](./docs/logistics-economy-model.md)
+- [Logistics Economy Daily Settlement](./docs/logistics-daily-settlement.md)
+- [Game Economy Economics Notes](./docs/game-economy-logistics.md)
+- [Operations Runbook](./docs/operations-runbook.md)
+- [OCI Lite Profile](./docs/oci-lite-profile.md)
+- [API Examples](./docs/api-examples.http)
+- [Smoke Result](./docs/final-smoke-result.md)

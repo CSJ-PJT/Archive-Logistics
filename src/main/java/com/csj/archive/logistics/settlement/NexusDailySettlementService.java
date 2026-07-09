@@ -25,9 +25,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,6 +92,36 @@ public class NexusDailySettlementService {
                 (int) results.stream().filter(result -> "SKIPPED".equals(result.status())).count(),
                 results
         );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasRunnableSettlementCandidates(LocalDate settlementDate) {
+        LocalDate date = settlementDate == null ? LocalDate.now(clock) : settlementDate;
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+        List<RoutePlanEntity> plans = routePlanRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThan(start, end);
+        if (plans.isEmpty()) {
+            return false;
+        }
+
+        Map<String, LogisticsOutboxEntity> outboxByRoutePlanId = outboxRepository.findByAggregateIdIn(
+                        plans.stream().map(RoutePlanEntity::routePlanId).toList()
+                ).stream()
+                .collect(Collectors.toMap(LogisticsOutboxEntity::aggregateId, Function.identity(), (first, ignored) -> first));
+        boolean allPublished = plans.stream()
+                .allMatch(plan -> {
+                    LogisticsOutboxEntity outbox = outboxByRoutePlanId.get(plan.routePlanId());
+                    return outbox != null && outbox.status() == OutboxStatus.PUBLISHED;
+                });
+        if (!allPublished) {
+            return false;
+        }
+
+        Set<String> factories = new HashSet<>();
+        plans.forEach(plan -> factories.add(plan.factoryId()));
+        return factories.stream()
+                .map(factory -> settlementRepository.findBySettlementDateAndFactoryId(date, factory))
+                .anyMatch(existing -> existing.isEmpty() || existing.get().status() != NexusDailySettlementStatus.SENT);
     }
 
     @Transactional(readOnly = true)

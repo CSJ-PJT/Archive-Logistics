@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15434/archive_logitics_test}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/archive_logitics_test}
     username: ${SPRING_DATASOURCE_USERNAME:archive}
     password: ${SPRING_DATASOURCE_PASSWORD:archive}
     hikari:
@@ -12,7 +12,7 @@ spring:
 archive:
   ledger:
     enabled: false
-    base-url: http://localhost:18080
+    base-url: http://localhost:8093
     bulk-endpoint: /api/events/logistics/bulk
     contract-mode: LOGISTICS_CONFIRMED_NATIVE
   outbox:

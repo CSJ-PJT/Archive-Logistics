@@ -1,81 +1,48 @@
 # API Reference
 
-Base URL:
-
-```text
-http://localhost:8092
-```
+Base URL: `http://localhost:8092`
 
 ## Health
 
 ```http
-GET /
-GET /dashboard.html
 GET /actuator/health
-GET /api/health
 ```
 
-`/` and `/dashboard.html` serve the operations dashboard. The dashboard is static HTML/CSS/JavaScript and reads the public operational APIs listed below.
+Dashboard: `GET /` , `GET /dashboard.html`
 
 ## Operations
 
-```http
-GET /api/operations/summary
-```
+- `GET /api/operations/summary`
+- `GET /api/routes/summary`
+- `GET /api/routes/summary?factoryId=FAC-A`
+- `GET /api/routes/summary?date=2026-01-15`
+- `GET /api/routes/summary?factoryId=FAC-A&date=2026-01-15`
+- `GET /api/outbox/summary`
+- `GET /api/logistics-economy/summary`
 
-Returns service status, active profile, event counts, route counts, outbox status, risk counts, ledger mode, and heap usage.
+## Routes
 
-## Nexus Events
+- `GET /api/routes/plans?page=0&size=20`
+- `GET /api/routes/plans/{routePlanId}`
+- `GET /api/routes/costs?page=0&size=20`
+- `GET /api/routes/costs/{routePlanId}`
+
+Pagination 기본 50, 최대 500.
+
+## Nexus Input
 
 ```http
 POST /api/events/nexus
 POST /api/events/nexus/bulk
 ```
 
-Single event example:
-
-```json
-{
-  "eventId": "evt-nexus-20260115-000123",
-  "idempotencyKey": "NEXUS:LOGISTICS_DISPATCHED:FAC-A:SHIP-000123",
-  "source": "Archive-Nexus",
-  "eventType": "LOGISTICS_DISPATCHED",
-  "occurredAt": "2026-01-15T10:32:15.000Z",
-  "payload": {
-    "factoryId": "FAC-A",
-    "shipmentId": "SHIP-000123",
-    "originCode": "FAC-A",
-    "destinationCode": "DC-SEOUL-01",
-    "priority": "HIGH",
-    "itemType": "battery-module",
-    "quantity": 120,
-    "requiresColdChain": false
-  }
-}
-```
-
 ## Simulation
 
 ```http
 POST /api/simulations/shipments?count=100
+POST /api/simulations/shipments?count=1000
+POST /api/simulations/shipments?count=10000
 ```
-
-Creates synthetic Nexus-like logistics events for local smoke and demo runs.
-
-## Routes
-
-```http
-GET /api/routes/plans?page=0&size=20
-GET /api/routes/plans/{routePlanId}
-GET /api/routes/costs?page=0&size=20
-GET /api/routes/costs/{routePlanId}
-GET /api/routes/summary
-GET /api/routes/summary?factoryId=FAC-A
-GET /api/routes/summary?date=2026-01-15
-GET /api/routes/summary?factoryId=FAC-A&date=2026-01-15
-```
-
-Pagination defaults to page size 50 and is capped by the service.
 
 ## Outbox
 
@@ -87,20 +54,23 @@ POST /api/outbox/publish
 POST /api/outbox/retry-failed
 ```
 
-`POST /api/outbox/publish` sends publishable outbox rows to Archive-Ledger when `archive.ledger.enabled=true`. The default native endpoint is `POST http://localhost:18080/api/events/logistics/bulk`. When Ledger is disabled, it returns dry-run output without an external call.
-
-## Nexus Daily Settlement
+## Logistics Settlements (Economy)
 
 ```http
-POST /api/settlements/nexus-daily/run
-POST /api/settlements/nexus-daily/run?date=2026-07-09
-POST /api/settlements/nexus-daily/run?date=2026-07-09&factoryId=FAC-A
-GET /api/settlements/nexus-daily
-GET /api/settlements/nexus-daily/summary
-GET /api/settlements/nexus-daily/{settlementId}
+POST /api/logistics-settlements/daily/run?date=YYYY-MM-DD
+GET /api/logistics-settlements
+GET /api/logistics-settlements/{settlementId}
+GET /api/logistics-settlements/summary?date=YYYY-MM-DD
 ```
 
-Creates daily manufacturing compensation callbacks for Archive-Nexus from route costs whose Logistics outbox event is already `PUBLISHED` to Archive-Ledger.
+## Logistics Economy
+
+```http
+GET /api/logistics-economy/summary
+GET /api/logistics-economy/revenue-events
+GET /api/logistics-economy/cost-events
+GET /api/logistics-economy/profit-snapshots
+```
 
 ## Batch
 
@@ -111,4 +81,13 @@ GET /api/batch/jobs
 GET /api/batch/jobs/{executionId}
 ```
 
-Used for explicit Spring Batch publisher, Nexus daily settlement execution, and job inspection.
+## Legacy Nexus Daily Settlement
+
+```http
+POST /api/settlements/nexus-daily/run
+GET /api/settlements/nexus-daily
+GET /api/settlements/nexus-daily/summary
+GET /api/settlements/nexus-daily/{settlementId}
+```
+
+Legacy API는 기존 Archive-Nexus 정산 흐름 호환성 유지 목적입니다.

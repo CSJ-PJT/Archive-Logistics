@@ -5,9 +5,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "archive.ledger")
 public class LedgerPublishProperties {
     private boolean enabled = false;
-    private String baseUrl = "http://localhost:18080";
+    private String baseUrl = "http://localhost:8093";
     private String bulkEndpoint = "/api/events/logistics/bulk";
-    private int publishTimeoutMs = 3000;
+    private int publishTimeoutMs = 30000;
     private LedgerContractMode contractMode = LedgerContractMode.LOGISTICS_CONFIRMED_NATIVE;
 
     public boolean isEnabled() {

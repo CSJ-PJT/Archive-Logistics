@@ -8,6 +8,8 @@ import com.csj.archive.logistics.outbox.LogisticsOutboxRepository;
 import com.csj.archive.logistics.outbox.OutboxStatus;
 import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlanRepository;
+import com.csj.archive.logistics.economy.LogisticsEconomyService;
+import com.csj.archive.logistics.economy.LogisticsEconomySummaryResponse;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class OperationsSummaryService {
     private final RoutePlanRepository routePlanRepository;
     private final RouteCostRepository routeCostRepository;
     private final LogisticsOutboxRepository outboxRepository;
+    private final LogisticsEconomyService economyService;
     private final AuditLogService auditLogService;
     private final LedgerPublishProperties ledgerProperties;
     private final Environment environment;
@@ -29,6 +32,7 @@ public class OperationsSummaryService {
                                     RoutePlanRepository routePlanRepository,
                                     RouteCostRepository routeCostRepository,
                                     LogisticsOutboxRepository outboxRepository,
+                                    LogisticsEconomyService economyService,
                                     AuditLogService auditLogService,
                                     LedgerPublishProperties ledgerProperties,
                                     Environment environment) {
@@ -36,6 +40,7 @@ public class OperationsSummaryService {
         this.routePlanRepository = routePlanRepository;
         this.routeCostRepository = routeCostRepository;
         this.outboxRepository = outboxRepository;
+        this.economyService = economyService;
         this.auditLogService = auditLogService;
         this.ledgerProperties = ledgerProperties;
         this.environment = environment;
@@ -44,6 +49,7 @@ public class OperationsSummaryService {
     public OperationsSummaryResponse summary() {
         long failedEvents = nexusEventRepository.countByStatus(NexusEventStatus.FAILED);
         long outboxFailed = outboxRepository.countByStatus(OutboxStatus.FAILED);
+        LogisticsEconomySummaryResponse economy = economyService.summary();
         Runtime runtime = Runtime.getRuntime();
         long usedHeap = runtime.totalMemory() - runtime.freeMemory();
         return new OperationsSummaryResponse(
@@ -55,6 +61,13 @@ public class OperationsSummaryService {
                 auditLogService.countDuplicates(),
                 failedEvents,
                 routePlanRepository.count(),
+                new OperationsSummaryResponse.Economy(
+                        economy.totalRevenue(),
+                        economy.totalCost(),
+                        economy.totalProfit(),
+                        economy.cashBalance(),
+                        economy.bankruptcyRisk()
+                ),
                 new OperationsSummaryResponse.Outbox(
                         outboxRepository.countByStatus(OutboxStatus.PENDING),
                         outboxRepository.countByStatus(OutboxStatus.PUBLISHED),

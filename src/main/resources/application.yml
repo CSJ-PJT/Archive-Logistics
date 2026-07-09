@@ -50,7 +50,7 @@ springdoc:
 archive:
   ledger:
     enabled: ${ARCHIVE_LEDGER_ENABLED:false}
-    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
+    base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:8093}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
     publish-timeout-ms: ${ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS:30000}
     contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}
@@ -67,3 +67,11 @@ archive:
     publish-timeout-ms: ${ARCHIVE_NEXUS_SETTLEMENT_TIMEOUT_MS:30000}
     max-retry-count: ${ARCHIVE_NEXUS_SETTLEMENT_MAX_RETRY_COUNT:5}
     manufacturing-share-rate: ${ARCHIVE_NEXUS_MANUFACTURING_SHARE_RATE:0.3000}
+    scheduler:
+      enabled: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_FIXED_DELAY_MS:300000}
+      initial-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_INITIAL_DELAY_MS:45000}
+      date-offset-days: ${ARCHIVE_NEXUS_SETTLEMENT_DATE_OFFSET_DAYS:0}
+  economy:
+    enabled: ${ARCHIVE_ECONOMY_ENABLED:false}
+    publish-enabled: ${ARCHIVE_ECONOMY_PUBLISH_ENABLED:false}

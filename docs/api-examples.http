@@ -4,26 +4,23 @@ GET http://localhost:8092/actuator/health
 ### Operations
 GET http://localhost:8092/api/operations/summary
 
+### Route Summary
+GET http://localhost:8092/api/routes/summary
+GET http://localhost:8092/api/routes/summary?factoryId=FAC-A
+GET http://localhost:8092/api/routes/summary?date=2026-01-15
+GET http://localhost:8092/api/routes/summary?factoryId=FAC-A&date=2026-01-15
+
+### Outbox
+GET http://localhost:8092/api/outbox/summary
+POST http://localhost:8092/api/outbox/publish
+
 ### Simulation
 POST http://localhost:8092/api/simulations/shipments?count=100
 
-### Outbox Summary
-GET http://localhost:8092/api/outbox/summary
-
-### Outbox Publish
-POST http://localhost:8092/api/outbox/publish
-
-### Nexus Daily Settlement Run
-POST http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09
-
-### Nexus Daily Settlement Summary
-GET http://localhost:8092/api/settlements/nexus-daily/summary
-
-### Nexus Daily Settlement Batch
-POST http://localhost:8092/api/batch/nexus-daily-settlement/run?date=2026-07-09
-
-### Routes
-GET http://localhost:8092/api/routes/plans?page=0&size=20
+### Economy Settlements
+POST http://localhost:8092/api/logistics-settlements/daily/run?date=2026-07-09
+GET http://localhost:8092/api/logistics-settlements
+GET http://localhost:8092/api/logistics-economy/summary
 
 ### Nexus Event
 POST http://localhost:8092/api/events/nexus
@@ -46,3 +43,7 @@ Content-Type: application/json
     "requiresColdChain": false
   }
 }
+
+### Legacy Nexus Daily Settlement
+POST http://localhost:8092/api/settlements/nexus-daily/run?date=2026-07-09
+GET http://localhost:8092/api/settlements/nexus-daily/summary

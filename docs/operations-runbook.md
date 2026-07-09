@@ -57,7 +57,7 @@ Actions:
 
 - if local/dev: verify `ARCHIVE_LEDGER_ENABLED=true` unless a dry-run drill is intended
 - use `POST /api/outbox/publish` or `POST /api/batch/outbox-publish/run` for explicit publish
-- check `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true` only when automatic publish is intended
+- check `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true` for automatic publish mode
 - check `ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk`
 - check `ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE`
 - inspect `last_error` on outbox events
@@ -71,7 +71,7 @@ Check configuration:
 archive:
   ledger:
     enabled: true
-    base-url: http://localhost:18080
+    base-url: http://localhost:8093
     bulk-endpoint: /api/events/logistics/bulk
     contract-mode: LOGISTICS_CONFIRMED_NATIVE
 ```
@@ -89,12 +89,15 @@ Docker/local defaults:
 
 ```env
 ARCHIVE_LEDGER_ENABLED=true
-ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:18080
+ARCHIVE_LEDGER_BASE_URL=http://host.docker.internal:8093
 ARCHIVE_LEDGER_BULK_ENDPOINT=/api/events/logistics/bulk
 ARCHIVE_LEDGER_CONTRACT_MODE=LOGISTICS_CONFIRMED_NATIVE
 ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS=30000
-ARCHIVE_OUTBOX_SCHEDULER_ENABLED=false
+ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true
 ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS=30000
+ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_ENABLED=true
+ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_FIXED_DELAY_MS=300000
+ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_INITIAL_DELAY_MS=45000
 ```
 
 Run manual publish:
@@ -106,10 +109,12 @@ curl.exe -X POST http://localhost:8092/api/outbox/publish
 After successful Ledger ingestion, Ledger can run:
 
 ```powershell
-curl.exe -X POST "http://localhost:18080/api/settlements/daily/run?date=YYYY-MM-DD"
-curl.exe -X POST "http://localhost:18080/api/reconciliation/daily?date=YYYY-MM-DD"
-curl.exe http://localhost:18080/api/reconciliation/summary
+curl.exe -X POST "http://localhost:8093/api/settlements/daily/run?date=YYYY-MM-DD"
+curl.exe -X POST "http://localhost:8093/api/reconciliation/daily?date=YYYY-MM-DD"
+curl.exe http://localhost:8093/api/reconciliation/summary
 ```
+
+In automatic demo mode, Archive-Ledger runs scheduled settlement/reconciliation and Archive-Logistics runs the Nexus daily settlement callback after the Logistics outbox is fully published for the target date.
 
 ## If Nexus Daily Settlement Fails
 
@@ -138,6 +143,10 @@ archive:
     base-url: http://localhost:8080
     daily-endpoint: /api/logistics/settlements/daily
     manufacturing-share-rate: 0.3000
+    scheduler:
+      enabled: true
+      fixed-delay-ms: 300000
+      initial-delay-ms: 45000
 ```
 
 ## If Nexus Events Fail
