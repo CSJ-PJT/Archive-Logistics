@@ -1,26 +1,52 @@
 # Architecture
 
-Archive-Logistics는 Archive Platform Ecosystem의 물류 이벤트 변환 계층입니다.
+Archive-Logistics is the logistics event transformation service in the Archive Platform Ecosystem.
 
 ```text
 Archive-Nexus -> Archive-Logistics -> Archive-Ledger -> ArchiveOS
 ```
 
-## Responsibilities
+## Responsibility Boundary
 
-- Nexus 이벤트 수신과 idempotency key 중복 방지
-- deterministic synthetic distance matrix 기반 route/ETA 계산
-- fuel/toll/urgent/delay/cold-chain cost 계산
-- Ledger 비용 확정 이벤트 생성
-- DB Outbox 저장과 Batch Publisher
-- Ledger 장애 격리와 retry 상태 관리
-- audit_log와 operations summary 제공
+Archive-Logistics owns only logistics event processing.
+
+- Receive logistics-related Nexus events
+- Enforce `eventId` / `idempotencyKey` idempotency
+- Calculate deterministic synthetic route, ETA, risk, and cost
+- Persist `route_plan` and `route_cost`
+- Create Ledger-compatible logistics cost events
+- Store publish targets in PostgreSQL outbox
+- Publish outbox events through Spring Batch / service publisher
+- Provide operations, route summary, outbox summary, health, and audit visibility
+
+Archive-Logistics does not own Ledger domain tables such as financial transactions, ledger entries, settlement batches, reconciliation results, or approval requests.
+
+## Runtime Flow
+
+1. Archive-Nexus sends `LOGISTICS_DISPATCHED` or related logistics events.
+2. Archive-Logistics stores the received event in `nexus_logistics_event`.
+3. The service checks duplicate `eventId` and `idempotencyKey`.
+4. `SyntheticRouteCalculator` calculates route plan, ETA, risk, delay, deviation, and route cost.
+5. Route and cost records are persisted.
+6. A Ledger-compatible payload is stored in `logistics_outbox_event`.
+7. A manual API call, scheduled publisher, or Spring Batch job publishes eligible outbox events.
+8. Publish attempts are recorded in `ledger_publish_attempt`.
+9. Audit records are stored in `audit_log`.
 
 ## Failure Isolation
 
-Ledger가 꺼져 있거나 장애가 있어도 Nexus 이벤트 수신과 route/cost 계산은 계속 동작합니다. 외부 송신은 outbox publisher가 별도로 수행하며 실패 시 `RETRY` 또는 `FAILED`로 상태를 남깁니다.
+Ledger availability does not control Nexus event ingestion or route/cost calculation.
+
+- Ledger disabled: publish returns DRY_RUN/SKIPPED without external request.
+- Ledger unavailable: outbox records retry metadata and keeps the service alive.
+- Retry metadata: `retry_count`, `last_error`, `next_retry_at`.
+- Final failure: records move to `FAILED` after max retry count.
 
 ## Synthetic Routing
 
-실제 지도 API, OSRM, GraphHopper, 실제 주소/차량/운송사 데이터는 사용하지 않습니다. 모든 거리와 리스크는 코드 내부 matrix와 deterministic hash로 계산됩니다.
+No real map API, OSRM, GraphHopper, real address, real vehicle, real carrier, or user location data is used. Distance and risk are derived from internal synthetic matrices and deterministic hashes.
+
+## Naming Compatibility
+
+External service name is **Archive-Logistics**. Some internal source names, class names, artifact names, and historical event values may still contain `Archive-Logitics` or `logitics` for compatibility with the original repository and previously generated event contracts.
 

@@ -4,95 +4,130 @@
   <img src="./docs/assets/logo.png" alt="ArchiveOS Logo" width="240" style="max-width: 280px; width: 40%; height: auto;" />
 </p>
 
-Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다.  
-외부 노출명은 `Archive-Logistics`이고, 저장소명/내부 호환 표기는 `Archive-Logitics`입니다.  
-Java 패키지/도메인은 `logistics`를 사용합니다.
+**출하 이벤트를 경로, ETA, 운송비로 변환해 Ledger로 발행하는 Spring Boot 물류 서비스**
 
-## Archive Ecosystem 역할
+Archive-Logistics는 Archive Platform Ecosystem에서 물류 이벤트 변환 계층을 담당합니다. Archive-Nexus가 발행한 제조/출하 이벤트를 수신하고, deterministic synthetic route calculator로 route plan, ETA, 운송비, 지연/우회 비용을 계산한 뒤 Archive-Ledger가 처리할 수 있는 비용 확정 이벤트를 outbox에 저장하고 발행합니다.
 
-- Archive-Nexus: 제조/출하 원인 이벤트를 발생
-- Archive-Logistics: 물류 경로/비용 산정, 검증 가능한 정형 아웃박스 생성, Ledger 이벤트 전달
-- Archive-Ledger: 비용 확정 이벤트를 정산/원장/거래로 반영
-- ArchiveOS: 고액/위험 이벤트의 승인·감사·알림(Archive-Ledger 연동 데이터) 처리
+외부 표시명은 `Archive-Logistics`로 통일합니다. 일부 내부 source, class, artifact, outbox source에는 기존 계약 호환성을 위해 `Archive-Logitics` 또는 `logitics` 표기가 남아 있을 수 있습니다.
 
-실시간 지도/차량/사용자 데이터는 사용하지 않으며, synthetic location/거리/가격 규칙으로만 계산합니다.
+## Operational Role
+
+- Nexus 물류 이벤트 수신
+- synthetic route / ETA / cost 계산
+- route_plan, route_cost 저장
+- PostgreSQL outbox 저장
+- Spring Batch Publisher 기반 Ledger publish
+- Ledger 장애/비활성 상태에서 DRY_RUN/SKIPPED 처리
+- route/cost/outbox/audit 운영 조회 제공
 
 ## Stack
 
-Java 21, Spring Boot 3, Spring Web, Validation, Spring Data JPA, PostgreSQL, Flyway, Spring Batch, Actuator, Micrometer, springdoc-openapi, JUnit 5, AssertJ, Testcontainers, Docker Compose, GitHub Actions.
+- Java 21
+- Spring Boot 3
+- Spring Web / Validation / Data JPA
+- PostgreSQL
+- Flyway
+- Spring Batch
+- Spring Actuator / Micrometer
+- Docker / Docker Compose
+- JUnit 5 / AssertJ / Testcontainers
 
-Lombok, Kafka, Redis, OSRM/GraphHopper, 실제 지도 API, 실제 배송/차량/주소/PII는 사용하지 않습니다.
+## Main APIs
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/operations/summary` | service, outbox, risk, ledger, memory 운영 요약 |
+| `GET` | `/api/routes/summary` | route/cost 집계 조회 |
+| `POST` | `/api/events/nexus/bulk` | Nexus bulk 물류 이벤트 수신 |
+| `POST` | `/api/events/nexus` | Nexus 단건 이벤트 수신 |
+| `POST` | `/api/simulations/shipments` | synthetic shipment 데모 데이터 생성 |
+| `GET` | `/api/outbox/summary` | outbox 상태 집계 |
+| `POST` | `/api/outbox/publish` | Ledger publish 또는 dry-run 처리 |
+| `GET` | `/actuator/health` | actuator health |
+
+## Failure Isolation
+
+Ledger 연동은 DB Outbox Pattern으로 격리합니다. Nexus 이벤트 수신과 route/cost 계산은 하나의 트랜잭션에서 처리하고, 외부 Ledger 발행은 outbox publisher가 별도로 수행합니다.
+
+- `archive.ledger.enabled=false`: 외부 호출 없이 DRY_RUN/SKIPPED 처리
+- Ledger 장애: Archive-Logistics API는 생존, outbox에 실패 상태 저장
+- 재시도 추적: `retry_count`, `last_error`, `next_retry_at`
+- 최대 재시도 이후 `FAILED` 상태 전환
+- publish attempt는 `ledger_publish_attempt`에 기록
+
+## `/api/routes/summary` Fix
+
+초기 구현에서는 nullable `date`, `factoryId`를 JPQL 조건에 직접 바인딩하면서 PostgreSQL JDBC가 파라미터 타입을 추론하지 못해 `could not determine data type` 500 오류가 발생할 수 있었습니다.
+
+현재는 조건 조합별 Repository/Service 분기 로직으로 전환했습니다.
+
+- `GET /api/routes/summary` -> HTTP 200
+- `GET /api/routes/summary?factoryId=FAC-A` -> HTTP 200
+- `GET /api/routes/summary?date=2026-01-15` -> HTTP 200
+- `GET /api/routes/summary?factoryId=FAC-A&date=2026-01-15` -> HTTP 200
+
+자세한 내용은 [routes-summary-fix.md](docs/routes-summary-fix.md)를 참고합니다.
 
 ## Local Run
 
 ```powershell
 docker compose up --build
-.\gradlew.bat clean test
-.\gradlew.bat build
+```
+
+또는 로컬 PostgreSQL이 준비된 상태에서:
+
+```powershell
 .\gradlew.bat bootRun
 ```
 
+기본 포트:
+
 - App: `http://localhost:8092`
-- PostgreSQL: `localhost:5434`(기본 예시)
-- Actuator: `http://localhost:8092/actuator/health`
+- PostgreSQL: `localhost:5434`
+- Expected Ledger: `http://localhost:8093` 또는 profile 설정값
 
-## 주요 API
-
-- `POST /api/events/nexus`
-- `POST /api/events/nexus/bulk`
-- `POST /api/simulations/shipments?count=<N>`
-- `GET /api/routes/plans`
-- `GET /api/routes/plans/{routePlanId}`
-- `GET /api/routes/costs`
-- `GET /api/routes/costs/{routePlanId}`
-- `GET /api/routes/summary`
-- `GET /api/routes/summary?factoryId=FAC-A`
-- `GET /api/routes/summary?date=YYYY-MM-DD`
-- `GET /api/routes/summary?factoryId=FAC-A&date=YYYY-MM-DD`
-- `GET /api/outbox/summary`
-- `POST /api/outbox/publish`
-- `GET /api/operations/summary`
-- `GET /actuator/health`
-
-## /api/routes/summary 500 이슈
-
-초기 구현에서 `date`, `factoryId`를 nullable 바인딩하는 JPQL 조건식으로 인해 PostgreSQL에서 `could not determine data type` 500 에러가 발생할 수 있었습니다.  
-현재는 nullable 조건 분기 쿼리를 제거하고 날짜/팩토리 조합별 조회 분기 경로로 전환하여 해결했습니다.
-
-## Ledger 연동
-
-기본값:
-
-```yaml
-archive:
-  ledger:
-    enabled: false
-    base-url: http://localhost:18080
-    bulk-endpoint: /api/events/nexus/bulk
-    contract-mode: ARCHIVE_LEDGER_V1_COMPAT
-```
-
-`enabled=false` 상태에서는 `/api/outbox/publish` 응답이 `DRY_RUN`이며 외부 전송을 하지 않습니다.
-
-## Quick Demo
+## Smoke Test
 
 ```powershell
 curl.exe http://localhost:8092/actuator/health
 curl.exe http://localhost:8092/api/operations/summary
 curl.exe -X POST "http://localhost:8092/api/simulations/shipments?count=100"
+curl.exe http://localhost:8092/api/routes/summary
+curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A"
+curl.exe "http://localhost:8092/api/routes/summary?date=2026-01-15"
+curl.exe "http://localhost:8092/api/routes/summary?factoryId=FAC-A&date=2026-01-15"
 curl.exe http://localhost:8092/api/outbox/summary
 curl.exe -X POST http://localhost:8092/api/outbox/publish
-curl.exe "http://localhost:8092/api/routes/plans?page=0&size=20"
 ```
 
-## OCI-lite
+Ledger disabled 상태에서 publish는 외부 호출 없이 DRY_RUN/SKIPPED로 종료됩니다.
 
-`application-oci-lite.yml`는 저메모리 배포를 위한 설정 템플릿입니다.
+## Runbook
 
-- JVM: `-Xms128m -Xmx384m`
-- Hikari 풀/Batch 청크/스케줄러/재시도 제한 축소
+운영 점검 순서:
 
-## Portfolio Line
+1. `GET /actuator/health`로 JVM/Spring 상태를 확인합니다.
+2. `GET /api/operations/summary`에서 `failedEvents`, `outbox.failed`, `outbox.retry`, `ledger.status`를 확인합니다.
+3. `GET /api/routes/summary`로 route/cost 집계가 정상인지 확인합니다.
+4. `GET /api/outbox/summary`로 pending/retry/failed 비율을 확인합니다.
+5. Ledger disabled 환경이면 publish 결과가 DRY_RUN/SKIPPED인지 확인합니다.
+6. Ledger enabled 환경에서 실패가 증가하면 `last_error`, `retry_count`, `ledger_publish_attempt`를 확인합니다.
 
-Archive-Logistics는 Archive-Nexus의 제조·출하 이벤트를 수신해 synthetic route, ETA, 운송비, 지연/우회 비용을 계산하고 Archive-Ledger로 물류비 확정 이벤트를 발행하는 Spring Boot 기반 물류 이벤트 서비스입니다. PostgreSQL + Flyway 기반 Outbox Pattern, idempotency key 중복 방지, Spring Batch Publisher, Ledger 장애 격리, Actuator 운영 요약 API를 통해 제조 → 물류 → 정산 흐름을 안정적으로 연결했습니다.
+상세 운영 절차는 [operations-runbook.md](docs/operations-runbook.md)를 참고합니다.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Event Contract](docs/event-contract.md)
+- [Route Summary Fix](docs/routes-summary-fix.md)
+- [Outbox Batch Publisher](docs/outbox-batch-publisher.md)
+- [API Reference](docs/api-reference.md)
+- [Smoke Test](docs/smoke-test.md)
+- [Operations Runbook](docs/operations-runbook.md)
+- [OCI Lite Profile](docs/oci-lite-profile.md)
+- [API Examples](docs/api-examples.http)
+
+## Synthetic Data Policy
+
+Archive-Logistics는 실제 지도 API, 실제 배송 데이터, 실제 차량 데이터, 실제 주소, 개인정보를 사용하지 않습니다. 모든 route, ETA, cost, risk는 synthetic matrix와 deterministic hash로 계산됩니다.
 

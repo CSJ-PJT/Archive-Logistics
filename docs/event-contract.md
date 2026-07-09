@@ -1,8 +1,8 @@
 # Event Contract
 
-## Nexus Input
+## Nexus Input Events
 
-Supported event types:
+Supported Nexus event types:
 
 - `LOGISTICS_DISPATCHED`
 - `URGENT_DELIVERY_REQUESTED`
@@ -30,18 +30,29 @@ Required payload fields:
 - `quantity`
 - `requiresColdChain`
 
-## Ledger Output
+## Ledger Output Events
 
-Ledger compatibility output types include:
+Archive-Logistics creates Ledger-compatible logistics cost events through the outbox.
 
-- `LOGISTICS_DISPATCHED` in `ARCHIVE_LEDGER_V1_COMPAT` mode
+Supported output event types include:
+
 - `LOGISTICS_COST_CONFIRMED`
 - `URGENT_DELIVERY_COST_CONFIRMED`
 - `DELAY_PENALTY_CONFIRMED`
 - `ROUTE_DEVIATION_COST_CONFIRMED`
 - `COLD_CHAIN_RISK_COST_CONFIRMED`
 
-Idempotency key format:
+Compatibility mode may publish `LOGISTICS_DISPATCHED` shaped payloads when `ARCHIVE_LEDGER_V1_COMPAT` is enabled.
+
+## Idempotency
+
+Nexus input idempotency:
+
+```text
+NEXUS:{eventType}:{originCode}:{shipmentId}
+```
+
+Ledger output idempotency:
 
 ```text
 LOGISTICS:{ledgerEventType}:{routePlanId}
@@ -53,20 +64,14 @@ Duplicate policy:
 - No duplicate `route_plan`, `route_cost`, or `logistics_outbox_event` is created.
 - Duplicate receipt is recorded in `audit_log`.
 
-Error policy:
+## Error Policy
 
-- Unknown route: `400`, `eventStatus=FAILED`, failure reason and audit log are recorded.
-- Unknown/invalid input: `400` with structured validation errors.
+- Unknown route: HTTP 400 style response, failed event stored, audit log recorded.
+- Validation error: HTTP 400 with structured field errors.
+- Duplicate event: HTTP 200 with duplicate result, no new route/cost/outbox.
+- Ledger publish failure: outbox status and retry metadata are updated; API process does not crash.
 
-Outbox publish policy:
+## Data Policy
 
-- `/api/outbox/publish` publishes in chunks from `PENDING` / `RETRY` and `next_retry_at <= now`.
-- `archive.ledger.enabled=false` returns `DRY_RUN` or `SKIPPED` without external request.
+Events use synthetic factory, destination, route, and vendor codes only. Real addresses, real drivers, real vehicles, real carriers, payment cards, accounts, user locations, and personal data are not generated or stored.
 
-Ledger events are sent only as Ledger-compat output; no Archive-Ledger domain tables are stored in this repository.
-
-Unknown route policy:
-
-- API returns HTTP 400 style error.
-- `nexus_logistics_event` is stored as `FAILED`.
-- Failure reason and audit log are recorded.
