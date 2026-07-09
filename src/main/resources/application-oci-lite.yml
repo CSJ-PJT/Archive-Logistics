@@ -12,10 +12,10 @@ spring:
 
 archive:
   outbox:
-    chunk-size: ${OUTBOX_CHUNK_SIZE:20}
+    chunk-size: ${ARCHIVE_OUTBOX_CHUNK_SIZE:20}
     scheduler:
-      enabled: ${OUTBOX_SCHEDULER_ENABLED:false}
-      fixed-delay-ms: ${OUTBOX_SCHEDULER_FIXED_DELAY_MS:60000}
+      enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS:60000}
 
 server:
   tomcat:

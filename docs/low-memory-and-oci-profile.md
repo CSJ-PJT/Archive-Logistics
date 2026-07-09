@@ -10,9 +10,9 @@ JAVA_OPTS="-Xms128m -Xmx384m"
 Recommended low-memory controls:
 
 - HikariCP: `DB_POOL_SIZE=3`, `DB_MIN_IDLE=1`
-- Outbox chunk: `OUTBOX_CHUNK_SIZE=20`
+- Outbox chunk: `ARCHIVE_OUTBOX_CHUNK_SIZE=20`
 - Scheduler: keep disabled unless needed
-- Scheduler interval: `OUTBOX_SCHEDULER_INTERVAL_MS=60000` or higher
+- Scheduler interval: `ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS=60000` or higher
 - Tomcat: `TOMCAT_MAX_THREADS=40`
 - Use pagination for all large route/outbox queries
 - Add retention cleanup later for old `audit_log`, `ledger_publish_attempt`, and published outbox rows

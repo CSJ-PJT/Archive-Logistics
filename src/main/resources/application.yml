@@ -52,11 +52,11 @@ archive:
     enabled: false
     base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/nexus/bulk}
-    publish-timeout-ms: 3000
-    contract-mode: ARCHIVE_LEDGER_V1_COMPAT
+    publish-timeout-ms: ${ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS:3000}
+    contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:ARCHIVE_LEDGER_V1_COMPAT}
   outbox:
-    chunk-size: 50
-    max-retry-count: 5
+    chunk-size: ${ARCHIVE_OUTBOX_CHUNK_SIZE:50}
+    max-retry-count: ${ARCHIVE_OUTBOX_MAX_RETRY_COUNT:5}
     scheduler:
-      enabled: false
-      fixed-delay-ms: 30000
+      enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:false}
+      fixed-delay-ms: ${ARCHIVE_OUTBOX_SCHEDULER_FIXED_DELAY_MS:30000}

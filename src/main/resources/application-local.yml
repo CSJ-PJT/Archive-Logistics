@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/archive_logitics}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15434/archive_logitics}
     username: ${SPRING_DATASOURCE_USERNAME:archive}
     password: ${SPRING_DATASOURCE_PASSWORD:archive}
     hikari:

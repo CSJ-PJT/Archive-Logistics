@@ -34,6 +34,7 @@ Required payload fields:
 
 Outbox event types include:
 
+- `LOGISTICS_DISPATCHED` in `ARCHIVE_LEDGER_V1_COMPAT` mode
 - `LOGISTICS_COST_CONFIRMED`
 - `URGENT_DELIVERY_COST_CONFIRMED`
 - `DELAY_PENALTY_CONFIRMED`
@@ -43,7 +44,7 @@ Outbox event types include:
 Idempotency key format:
 
 ```text
-LOGITICS:{ledgerEventType}:{routePlanId}
+LOGISTICS:{ledgerEventType}:{routePlanId}
 ```
 
 Duplicate policy:

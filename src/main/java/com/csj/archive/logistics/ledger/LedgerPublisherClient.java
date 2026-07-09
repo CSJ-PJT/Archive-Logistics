@@ -1,12 +1,14 @@
 package com.csj.archive.logistics.ledger;
 
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
@@ -43,8 +45,14 @@ public class LedgerPublisherClient {
                 .uri(properties.getBulkEndpoint())
                 .accept(MediaType.APPLICATION_JSON)
                 .body(body)
-                .retrieve()
-                .body(String.class);
+                .exchange((request, response) -> {
+                    String rawBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+                    if (!response.getStatusCode().is2xxSuccessful()) {
+                        throw new IllegalStateException("Ledger bulk publish failed with status "
+                                + response.getStatusCode() + ": " + rawBody);
+                    }
+                    return rawBody;
+                });
 
         if (responseBody == null || responseBody.isBlank()) {
             return LedgerBulkPublishResponse.success(events.size());

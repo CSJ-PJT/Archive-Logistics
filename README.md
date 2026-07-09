@@ -131,10 +131,10 @@ curl.exe "http://localhost:8092/api/routes/plans?page=0&size=20"
 $env:SPRING_PROFILES_ACTIVE="oci-lite"
 $env:JAVA_OPTS="-Xms128m -Xmx384m"
 $env:DB_POOL_SIZE="3"
-$env:OUTBOX_CHUNK_SIZE="20"
-$env:OUTBOX_SCHEDULER_ENABLED="false"
+$env:ARCHIVE_OUTBOX_CHUNK_SIZE="20"
+$env:ARCHIVE_OUTBOX_SCHEDULER_ENABLED="false"
 ```
 
 ## Portfolio Line
 
-Archive-Logitics · Java/Spring Synthetic Logistics Event Backend: implemented a PostgreSQL/Flyway Outbox-based logistics event service that converts Archive-Nexus shipment events into deterministic synthetic route/cost facts and publishes Ledger-compatible cost events with idempotency, batch publishing, failure isolation, audit logs, and Actuator operations APIs.
+Archive-Logitics - Java/Spring Synthetic Logistics Event Backend: implemented a PostgreSQL/Flyway Outbox-based logistics event service that converts Archive-Nexus shipment events into deterministic synthetic route/cost facts and publishes Ledger-compatible cost events with idempotency, batch publishing, failure isolation, audit logs, and Actuator operations APIs.
