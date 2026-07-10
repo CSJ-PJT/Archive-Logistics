@@ -168,7 +168,7 @@ public class NexusLogisticsEventService {
             MarketShipmentMetadata metadata = MarketShipmentMetadata.fromPayload(request.payload());
             RoutePlan routePlan = routeCalculator.calculate(request, metadata);
             routePlanRepository.save(new RoutePlanEntity(routePlan, now));
-            RouteCostEntity routeCost = routeCostRepository.save(new RouteCostEntity(routePlan.routePlanId(), routePlan.cost(), now));
+            RouteCostEntity routeCost = routeCostRepository.save(new RouteCostEntity(routePlan, now));
             var economy = economyService.createRouteEconomyEvents(
                     routePlan,
                     routeCost,

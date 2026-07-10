@@ -1,14 +1,22 @@
 # ArchiveOS Live Flow Contract
 
-## 목적
+## Purpose
 
-ArchiveOS Live Flow / Operational Twin은 Archive-Logistics의 runtime event, outbox,
-workforce, capacity, productivity, economy 상태를 read-only로 수집한다.
+ArchiveOS Live Flow reads Archive-Logistics runtime state through read-only APIs.
+Archive-Logistics continues to run even when ArchiveOS is unavailable.
 
-ArchiveOS가 꺼져 있어도 Archive-Logistics는 독립적으로 동작한다.
-이 계약은 pull 기반 조회이며 외부 write를 요구하지 않는다.
+The projection is built from persisted synthetic runtime data only:
 
-## Read-only 수집 API
+- Nexus logistics events
+- route plans
+- route costs
+- Logistics outbox events
+- workforce allocations
+- workday productivity results
+
+It does not create fake animation-only trucks, tokens, addresses, or personal data.
+
+## Read-only APIs
 
 ```http
 GET /api/runtime-events/recent?limit=100
@@ -22,18 +30,48 @@ GET /api/logistics-economy/summary
 GET /api/outbox/summary
 ```
 
-## Runtime Mapping
+## Operations Summary Additions
 
-| Source table | Runtime domain | Entity type | Status mapping |
-| --- | --- | --- | --- |
-| `nexus_logistics_event` | `logistics` | `nexus_logistics_event` | `RECEIVED -> moving`, `PROCESSED -> completed`, `FAILED -> failed` |
-| `route_plan` | `logistics` | `route_plan` | delayed route -> `delayed`, normal route -> `completed` |
-| `logistics_outbox_event` | `logistics` | outbox aggregate type | `PENDING -> moving`, `RETRY -> waiting`, `PUBLISHED -> settled`, `FAILED -> failed`, `SKIPPED -> unavailable` |
+`GET /api/operations/summary` includes Live Flow fields:
 
-## Operational Twin 원칙
+- `serviceName`
+- `serviceRole`
+- `latestEventAt`
+- `liveFlowAvailable`
+- `shipmentsRequested`
+- `shipmentsDispatched`
+- `shipmentsDelayed`
+- `deliveryCompleted`
+- `routePlansCreated`
+- `backlogCount`
+- `workforce.driverCapacity`
+- `workforce.usedCapacity`
+- `workforce.bottleneckRole`
 
-- fake random animation data를 만들지 않는다.
-- API 응답은 persisted synthetic runtime data에서만 만든다.
-- `sourceService`, `eventType`, `status`, `correlationId`, `entityId`를 일관되게 제공한다.
-- metadata에는 synthetic ID만 제공한다.
-- 실제 개인정보/금융정보/배송주소/직원정보는 저장하거나 노출하지 않는다.
+Existing fields remain compatible.
+
+## Runtime Event Types
+
+Archive-Logistics exposes the following event types for ArchiveOS:
+
+- `SHIPMENT_CREATED`
+- `ROUTE_ASSIGNED`
+- `ROUTE_COST_CALCULATED`
+- `TRUCK_DISPATCHED`
+- `DELIVERY_DELAYED`
+- `DELIVERY_COMPLETED`
+- `LOGISTICS_COST_CONFIRMED`
+- `LEDGER_EVENT_PUBLISHED`
+- `WORKFORCE_ALLOCATION_ASSIGNED`
+- `WORKDAY_COMPLETED`
+- `CAPACITY_SHORTAGE_DETECTED`
+- `LOGISTICS_BACKLOG_INCREASED`
+
+## Safety Rules
+
+- Runtime events are read-only projections.
+- `eventType`, enum, API path, ID, and correlation fields are not translated.
+- `orderId`, `correlationId`, `simulationRunId`, and `settlementCycleId` are preserved when Nexus provides them.
+- Metadata exposes synthetic IDs and synthetic categories only.
+- `originCode` and `destinationCode` are not exposed as address-like runtime metadata; `originType` and `destinationType` are used instead.
+- Failed publish/callback state is exposed with `warning` or `critical` severity.

@@ -16,6 +16,12 @@ public record OperationsSummaryResponse(
         long duplicateEvents,
         long failedEvents,
         long routePlans,
+        long shipmentsRequested,
+        long shipmentsDispatched,
+        long shipmentsDelayed,
+        long deliveryCompleted,
+        long routePlansCreated,
+        long backlogCount,
         Economy economy,
         Outbox outbox,
         Risk risk,
@@ -46,6 +52,9 @@ public record OperationsSummaryResponse(
             long workloadEvents,
             long backlogEvents,
             long shortageEvents,
+            long driverCapacity,
+            long usedCapacity,
+            String bottleneckRole,
             String status,
             String bottleneckType
     ) {

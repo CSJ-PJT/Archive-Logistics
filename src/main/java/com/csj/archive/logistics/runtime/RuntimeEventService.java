@@ -5,8 +5,14 @@ import com.csj.archive.logistics.event.NexusEventRepository;
 import com.csj.archive.logistics.outbox.LogisticsOutboxEntity;
 import com.csj.archive.logistics.outbox.LogisticsOutboxRepository;
 import com.csj.archive.logistics.outbox.OutboxStatus;
+import com.csj.archive.logistics.route.RouteCostEntity;
+import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
+import com.csj.archive.logistics.workforce.WorkdayProductivityEntity;
+import com.csj.archive.logistics.workforce.WorkdayProductivityRepository;
+import com.csj.archive.logistics.workforce.WorkforceAllocationEntity;
+import com.csj.archive.logistics.workforce.WorkforceAllocationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -26,14 +32,23 @@ public class RuntimeEventService {
 
     private final NexusEventRepository nexusEventRepository;
     private final RoutePlanRepository routePlanRepository;
+    private final RouteCostRepository routeCostRepository;
     private final LogisticsOutboxRepository outboxRepository;
+    private final WorkforceAllocationRepository workforceAllocationRepository;
+    private final WorkdayProductivityRepository workdayProductivityRepository;
 
     public RuntimeEventService(NexusEventRepository nexusEventRepository,
                                RoutePlanRepository routePlanRepository,
-                               LogisticsOutboxRepository outboxRepository) {
+                               RouteCostRepository routeCostRepository,
+                               LogisticsOutboxRepository outboxRepository,
+                               WorkforceAllocationRepository workforceAllocationRepository,
+                               WorkdayProductivityRepository workdayProductivityRepository) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
+        this.routeCostRepository = routeCostRepository;
         this.outboxRepository = outboxRepository;
+        this.workforceAllocationRepository = workforceAllocationRepository;
+        this.workdayProductivityRepository = workdayProductivityRepository;
     }
 
     public List<RuntimeEventResponse> recent(int limit) {
@@ -41,8 +56,11 @@ public class RuntimeEventService {
         PageRequest page = PageRequest.of(0, safeLimit);
         List<RuntimeEventResponse> events = new ArrayList<>();
         nexusEventRepository.findAllByOrderByCreatedAtDesc(page).forEach(event -> events.add(fromNexus(event)));
-        routePlanRepository.findAllByOrderByCreatedAtDesc(page).forEach(route -> events.add(fromRoute(route)));
-        outboxRepository.findAllByOrderByCreatedAtDesc(page).forEach(outbox -> events.add(fromOutbox(outbox)));
+        routePlanRepository.findAllByOrderByCreatedAtDesc(page).forEach(route -> events.addAll(fromRoute(route)));
+        routeCostRepository.findAllByOrderByCreatedAtDesc(page).forEach(cost -> events.add(fromRouteCost(cost)));
+        outboxRepository.findAllByOrderByCreatedAtDesc(page).forEach(outbox -> events.addAll(fromOutbox(outbox)));
+        workforceAllocationRepository.findAllByOrderByCreatedAtDesc(page).forEach(allocation -> events.add(fromAllocation(allocation)));
+        workdayProductivityRepository.findAllByOrderByCreatedAtDesc(page).forEach(workday -> events.addAll(fromWorkday(workday)));
         return events.stream()
                 .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .limit(safeLimit)
@@ -55,8 +73,9 @@ public class RuntimeEventService {
         }
         List<RuntimeEventResponse> events = new ArrayList<>();
         routePlanRepository.findByCorrelationId(correlationId).forEach(route -> {
-            events.add(fromRoute(route));
-            outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.add(fromOutbox(outbox)));
+            events.addAll(fromRoute(route));
+            routeCostRepository.findByRoutePlanId(route.routePlanId()).ifPresent(cost -> events.add(fromRouteCost(cost)));
+            outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
             nexusEventRepository.findByEventId(route.sourceEventId()).ifPresent(event -> events.add(fromNexus(event)));
         });
         return sorted(events);
@@ -69,12 +88,13 @@ public class RuntimeEventService {
         List<RuntimeEventResponse> events = new ArrayList<>();
         nexusEventRepository.findByEventId(entityId).ifPresent(event -> events.add(fromNexus(event)));
         routePlanRepository.findByRoutePlanId(entityId).ifPresent(route -> {
-            events.add(fromRoute(route));
-            outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.add(fromOutbox(outbox)));
+            events.addAll(fromRoute(route));
+            routeCostRepository.findByRoutePlanId(route.routePlanId()).ifPresent(cost -> events.add(fromRouteCost(cost)));
+            outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
         });
-        routePlanRepository.findByShipmentId(entityId).forEach(route -> events.add(fromRoute(route)));
-        outboxRepository.findByEventId(entityId).ifPresent(outbox -> events.add(fromOutbox(outbox)));
-        outboxRepository.findByAggregateId(entityId).ifPresent(outbox -> events.add(fromOutbox(outbox)));
+        routePlanRepository.findByShipmentId(entityId).forEach(route -> events.addAll(fromRoute(route)));
+        outboxRepository.findByEventId(entityId).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
+        outboxRepository.findByAggregateId(entityId).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
         return sorted(events);
     }
 
@@ -93,7 +113,7 @@ public class RuntimeEventService {
                 event.eventId(),
                 event.source(),
                 "logistics",
-                event.eventType(),
+                "SHIPMENT_CREATED",
                 "nexus_logistics_event",
                 shipmentId,
                 correlationId,
@@ -104,42 +124,104 @@ public class RuntimeEventService {
                 event.receivedAt(),
                 metadata(
                         "shipmentId", shipmentId,
-                        "originCode", text(payload, "originCode", null),
-                        "destinationCode", text(payload, "destinationCode", null),
+                        "originType", syntheticLocationType(text(payload, "originCode", null)),
+                        "destinationType", syntheticLocationType(text(payload, "destinationCode", null)),
                         "priority", text(payload, "priority", null),
                         "orderId", text(payload, "orderId", null)
                 )
         );
     }
 
-    private RuntimeEventResponse fromRoute(RoutePlanEntity route) {
-        return new RuntimeEventResponse(
+    private List<RuntimeEventResponse> fromRoute(RoutePlanEntity route) {
+        RuntimeEventResponse assigned = new RuntimeEventResponse(
                 route.routePlanId(),
                 SERVICE,
                 "logistics",
-                "ROUTE_PLAN_CREATED",
+                "ROUTE_ASSIGNED",
                 "route_plan",
                 route.routePlanId(),
                 fallback(route.correlationId(), route.sourceEventId()),
                 fallback(route.causationId(), route.sourceEventId()),
-                route.delayed() ? "delayed" : "completed",
-                route.deviated() || route.delayed() ? "warning" : "normal",
+                "completed",
+                "normal",
                 "Synthetic route and ETA calculated",
                 route.createdAt(),
                 metadata(
                         "shipmentId", route.shipmentId(),
                         "factoryId", route.factoryId(),
-                        "originCode", route.originCode(),
-                        "destinationCode", route.destinationCode(),
+                        "originType", syntheticLocationType(route.originCode()),
+                        "destinationType", syntheticLocationType(route.destinationCode()),
                         "orderId", route.orderId(),
                         "settlementCycleId", route.settlementCycleId()
                 )
         );
+        RuntimeEventResponse dispatch = route.delayed()
+                ? routeLifecycle(route, "DELIVERY_DELAYED", "delayed", "warning", "Delivery delayed by synthetic risk/capacity signal")
+                : routeLifecycle(route, "TRUCK_DISPATCHED", "moving", "info", "Synthetic truck dispatched");
+        RuntimeEventResponse completed = route.delayed()
+                ? null
+                : routeLifecycle(route, "DELIVERY_COMPLETED", "completed", "normal", "Synthetic delivery completed");
+        List<RuntimeEventResponse> events = new ArrayList<>();
+        events.add(assigned);
+        events.add(dispatch);
+        if (completed != null) {
+            events.add(completed);
+        }
+        return events;
     }
 
-    private RuntimeEventResponse fromOutbox(LogisticsOutboxEntity outbox) {
-        JsonNode payload = outbox.payload();
+    private RuntimeEventResponse routeLifecycle(RoutePlanEntity route, String eventType, String status, String severity, String label) {
         return new RuntimeEventResponse(
+                route.routePlanId() + ":" + eventType,
+                SERVICE,
+                "logistics",
+                eventType,
+                "shipment",
+                route.shipmentId(),
+                fallback(route.correlationId(), route.sourceEventId()),
+                fallback(route.causationId(), route.sourceEventId()),
+                status,
+                severity,
+                label,
+                route.createdAt(),
+                metadata(
+                        "routePlanId", route.routePlanId(),
+                        "shipmentId", route.shipmentId(),
+                        "orderId", route.orderId(),
+                        "destinationType", syntheticLocationType(route.destinationCode()),
+                        "delayed", route.delayed()
+                )
+        );
+    }
+
+    private RuntimeEventResponse fromRouteCost(RouteCostEntity cost) {
+        return new RuntimeEventResponse(
+                cost.routePlanId() + ":ROUTE_COST_CALCULATED",
+                SERVICE,
+                "logistics",
+                "ROUTE_COST_CALCULATED",
+                "route_cost",
+                cost.routePlanId(),
+                fallback(cost.correlationId(), cost.routePlanId()),
+                fallback(cost.correlationId(), cost.routePlanId()),
+                "completed",
+                cost.requiresApproval() ? "warning" : "info",
+                "Synthetic logistics route cost calculated",
+                cost.createdAt(),
+                metadata(
+                        "routePlanId", cost.routePlanId(),
+                        "orderId", cost.orderId(),
+                        "totalCost", cost.totalCost(),
+                        "currency", cost.currency(),
+                        "requiresApproval", cost.requiresApproval(),
+                        "settlementCycleId", cost.settlementCycleId()
+                )
+        );
+    }
+
+    private List<RuntimeEventResponse> fromOutbox(LogisticsOutboxEntity outbox) {
+        JsonNode payload = outbox.payload();
+        RuntimeEventResponse costConfirmed = new RuntimeEventResponse(
                 outbox.eventId(),
                 outbox.source(),
                 "logistics",
@@ -149,8 +231,8 @@ public class RuntimeEventService {
                 text(payload, "correlationId", outbox.aggregateId()),
                 text(payload, "causationId", outbox.aggregateId()),
                 outboxStatus(outbox.status()),
-                outbox.status() == OutboxStatus.FAILED ? "critical" : "info",
-                "Ledger publish outbox event",
+                outboxSeverity(outbox.status()),
+                "Logistics cost event prepared for Ledger",
                 outbox.createdAt(),
                 metadata(
                         "aggregateId", outbox.aggregateId(),
@@ -158,6 +240,110 @@ public class RuntimeEventService {
                         "shipmentId", text(payload, "shipmentId", null),
                         "orderId", text(payload, "orderId", null),
                         "workdayId", text(payload, "workdayId", null)
+                )
+        );
+        if (outbox.status() != OutboxStatus.PUBLISHED) {
+            return List.of(costConfirmed);
+        }
+        RuntimeEventResponse published = new RuntimeEventResponse(
+                outbox.eventId() + ":LEDGER_EVENT_PUBLISHED",
+                outbox.source(),
+                "logistics",
+                "LEDGER_EVENT_PUBLISHED",
+                outbox.aggregateType(),
+                outbox.aggregateId(),
+                text(payload, "correlationId", outbox.aggregateId()),
+                text(payload, "causationId", outbox.aggregateId()),
+                "settled",
+                "info",
+                "Ledger logistics event published",
+                outbox.publishedAt() == null ? outbox.createdAt() : outbox.publishedAt(),
+                metadata(
+                        "aggregateId", outbox.aggregateId(),
+                        "routePlanId", text(payload, "routePlanId", outbox.aggregateId()),
+                        "shipmentId", text(payload, "shipmentId", null),
+                        "orderId", text(payload, "orderId", null),
+                        "workdayId", text(payload, "workdayId", null)
+                )
+        );
+        return List.of(costConfirmed, published);
+    }
+
+    private RuntimeEventResponse fromAllocation(WorkforceAllocationEntity allocation) {
+        return new RuntimeEventResponse(
+                allocation.allocationId(),
+                allocation.sourceService(),
+                "logistics",
+                "WORKFORCE_ALLOCATION_ASSIGNED",
+                "workforce_allocation",
+                allocation.allocationId(),
+                fallback(allocation.correlationId(), allocation.workdayId()),
+                fallback(allocation.causationId(), allocation.workdayId()),
+                "completed",
+                "info",
+                "Synthetic logistics workforce allocation assigned",
+                allocation.createdAt(),
+                metadata(
+                        "workdayId", allocation.workdayId(),
+                        "roleType", allocation.roleType().name(),
+                        "allocatedHeadcount", allocation.allocatedHeadcount(),
+                        "effectiveCapacity", allocation.effectiveCapacity(),
+                        "settlementCycleId", allocation.settlementCycleId()
+                )
+        );
+    }
+
+    private List<RuntimeEventResponse> fromWorkday(WorkdayProductivityEntity workday) {
+        List<RuntimeEventResponse> events = new ArrayList<>();
+        events.add(new RuntimeEventResponse(
+                workday.workdayId(),
+                SERVICE,
+                "logistics",
+                "WORKDAY_COMPLETED",
+                "workday",
+                workday.workdayId(),
+                workday.workdayId(),
+                fallback(workday.allocationId(), workday.workdayId()),
+                "completed",
+                workday.backlogEvents() > 0 ? "warning" : "info",
+                "Synthetic logistics workday completed",
+                workday.createdAt(),
+                metadata(
+                        "shipmentsRequested", workday.shipmentsRequested(),
+                        "shipmentsDispatched", workday.shipmentsDispatched(),
+                        "deliveryCompleted", workday.deliveryCompleted(),
+                        "shipmentsDelayed", workday.shipmentsDelayed(),
+                        "bottleneckRole", workday.bottleneckType()
+                )
+        ));
+        if (workday.shortageEvents() > 0) {
+            events.add(workdaySignal(workday, "CAPACITY_SHORTAGE_DETECTED", workday.shortageEvents(), "critical"));
+        }
+        if (workday.backlogEvents() > 0) {
+            events.add(workdaySignal(workday, "LOGISTICS_BACKLOG_INCREASED", workday.backlogEvents(), "warning"));
+        }
+        return events;
+    }
+
+    private RuntimeEventResponse workdaySignal(WorkdayProductivityEntity workday, String eventType, long count, String severity) {
+        return new RuntimeEventResponse(
+                workday.workdayId() + ":" + eventType,
+                SERVICE,
+                "logistics",
+                eventType,
+                "workday",
+                workday.workdayId(),
+                workday.workdayId(),
+                fallback(workday.allocationId(), workday.workdayId()),
+                "waiting",
+                severity,
+                eventType.replace('_', ' '),
+                workday.createdAt(),
+                metadata(
+                        "count", count,
+                        "bottleneckRole", workday.bottleneckType(),
+                        "totalCapacity", workday.capacityEvents(),
+                        "usedCapacity", workday.usedCapacity()
                 )
         );
     }
@@ -179,6 +365,30 @@ public class RuntimeEventService {
             case SKIPPED -> "unavailable";
             default -> "moving";
         };
+    }
+
+    private String outboxSeverity(OutboxStatus status) {
+        return switch (status) {
+            case FAILED -> "critical";
+            case RETRY, SKIPPED -> "warning";
+            default -> "info";
+        };
+    }
+
+    private String syntheticLocationType(String code) {
+        if (code == null || code.isBlank()) {
+            return null;
+        }
+        if (code.startsWith("FAC-")) {
+            return "FACTORY";
+        }
+        if (code.startsWith("DC-")) {
+            return "DISTRIBUTION_CENTER";
+        }
+        if (code.startsWith("VENDOR-")) {
+            return "SYNTHETIC_VENDOR";
+        }
+        return "SYNTHETIC_LOCATION";
     }
 
     private String text(JsonNode node, String field, String fallback) {

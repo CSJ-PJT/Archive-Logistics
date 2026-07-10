@@ -46,6 +46,18 @@ public class RouteCostEntity {
     @Column(name = "reason", nullable = false)
     private String reason;
 
+    @Column(name = "order_id", length = 100)
+    private String orderId;
+
+    @Column(name = "correlation_id", length = 100)
+    private String correlationId;
+
+    @Column(name = "simulation_run_id", length = 100)
+    private String simulationRunId;
+
+    @Column(name = "settlement_cycle_id", length = 100)
+    private String settlementCycleId;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -68,6 +80,14 @@ public class RouteCostEntity {
         this.reason = routeCost.reason();
         this.createdAt = now;
         this.updatedAt = now;
+    }
+
+    public RouteCostEntity(RoutePlan routePlan, LocalDateTime now) {
+        this(routePlan.routePlanId(), routePlan.cost(), now);
+        this.orderId = routePlan.orderId();
+        this.correlationId = routePlan.correlationId();
+        this.simulationRunId = routePlan.simulationRunId();
+        this.settlementCycleId = routePlan.settlementCycleId();
     }
 
     public String routePlanId() {
@@ -108,5 +128,25 @@ public class RouteCostEntity {
 
     public String reason() {
         return reason;
+    }
+
+    public String orderId() {
+        return orderId;
+    }
+
+    public String correlationId() {
+        return correlationId;
+    }
+
+    public String simulationRunId() {
+        return simulationRunId;
+    }
+
+    public String settlementCycleId() {
+        return settlementCycleId;
+    }
+
+    public LocalDateTime createdAt() {
+        return createdAt;
     }
 }

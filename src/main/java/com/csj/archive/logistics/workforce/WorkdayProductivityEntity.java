@@ -239,4 +239,8 @@ public class WorkdayProductivityEntity {
     public String bottleneckType() {
         return bottleneckType;
     }
+
+    public LocalDateTime createdAt() {
+        return createdAt;
+    }
 }

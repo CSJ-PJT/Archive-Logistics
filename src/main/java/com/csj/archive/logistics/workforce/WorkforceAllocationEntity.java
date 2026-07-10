@@ -209,4 +209,8 @@ public class WorkforceAllocationEntity {
     public String reason() {
         return reason;
     }
+
+    public LocalDateTime createdAt() {
+        return createdAt;
+    }
 }

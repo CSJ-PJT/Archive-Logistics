@@ -23,11 +23,17 @@ class OperationsSummaryResponseTest {
                 0,
                 0,
                 1,
+                10,
+                8,
+                2,
+                8,
+                10,
+                1,
                 new OperationsSummaryResponse.Economy(100, 50, 50, 1_000, "LOW"),
                 new OperationsSummaryResponse.Outbox(0, 1, 0, 0, 0),
                 new OperationsSummaryResponse.Risk(0, 0, 0, 0),
                 new OperationsSummaryResponse.MarketOrigin(1, 0, 0, 0),
-                new OperationsSummaryResponse.Workforce(false, true, 100, 10, 0, 0, "PRODUCTIVITY_REPORTED", "NONE"),
+                new OperationsSummaryResponse.Workforce(false, true, 100, 10, 0, 0, 8, 6, "NONE", "PRODUCTIVITY_REPORTED", "NONE"),
                 new OperationsSummaryResponse.Ledger(false, "DISABLED", "http://localhost:18080", "/api/events/logistics/bulk", "LOGISTICS_CONFIRMED_NATIVE"),
                 new OperationsSummaryResponse.Memory(512, 128)
         );
@@ -36,5 +42,7 @@ class OperationsSummaryResponseTest {
         assertThat(response.serviceRole()).isEqualTo("Synthetic Logistics Event Backend");
         assertThat(response.liveFlowAvailable()).isTrue();
         assertThat(response.latestEventAt()).isEqualTo(LocalDateTime.parse("2026-07-10T10:00:00"));
+        assertThat(response.shipmentsRequested()).isEqualTo(10);
+        assertThat(response.workforce().driverCapacity()).isEqualTo(8);
     }
 }

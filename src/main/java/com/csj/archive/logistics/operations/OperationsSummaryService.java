@@ -76,6 +76,12 @@ public class OperationsSummaryService {
                 auditLogService.countDuplicates(),
                 failedEvents,
                 routePlanRepository.count(),
+                workforce.shipmentsRequested(),
+                workforce.shipmentsDispatched(),
+                workforce.shipmentsDelayed(),
+                workforce.deliveryCompleted(),
+                workforce.routePlansCreated(),
+                workforce.backlogEvents(),
                 new OperationsSummaryResponse.Economy(
                         economy.totalRevenue(),
                         economy.totalCost(),
@@ -109,6 +115,9 @@ public class OperationsSummaryService {
                         workforce.workloadEvents(),
                         workforce.backlogEvents(),
                         workforce.shortageEvents(),
+                        driverCapacity(workforce),
+                        workforce.usedCapacity(),
+                        workforce.bottleneckType(),
                         workforce.status(),
                         workforce.bottleneckType()
                 ),
@@ -153,5 +162,9 @@ public class OperationsSummaryService {
             return "Synthetic workforce backlog detected.";
         }
         return null;
+    }
+
+    private long driverCapacity(WorkforceSummaryResponse workforce) {
+        return workforce.drivers() * 8L;
     }
 }
