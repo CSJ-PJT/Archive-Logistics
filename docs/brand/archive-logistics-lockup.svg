@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 420" role="img" aria-labelledby="title desc">
+  <title id="title">Archive-Logistics</title>
+  <desc id="desc">Archive Platform Logistics service brand lockup with synthetic route and delivery marks.</desc>
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#f7fafc"/>
+      <stop offset="1" stop-color="#d9e2ec"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12f2f5"/>
+      <stop offset="1" stop-color="#00d4ff"/>
+    </linearGradient>
+    <linearGradient id="route" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00e6ef"/>
+      <stop offset="0.5" stop-color="#7cf8d5"/>
+      <stop offset="1" stop-color="#35d66b"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1500" height="420" rx="24" fill="#05070a"/>
+  <path d="M1080 45h320c28 0 50 22 50 50v230c0 28-22 50-50 50h-320c-28 0-50-22-50-50V95c0-28 22-50 50-50Z" fill="#0b1016" stroke="#17212c" stroke-width="2"/>
+  <path d="M1078 315c82-86 158-105 228-58 36 24 75 27 118 10" fill="none" stroke="url(#route)" stroke-width="8" stroke-linecap="round" opacity=".95" filter="url(#softGlow)"/>
+  <path d="M1084 174h278" stroke="#182735" stroke-width="2"/>
+  <path d="M1118 137h210M1118 213h170M1118 251h236" stroke="#243544" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#00e6ef">
+    <circle cx="1078" cy="315" r="13"/>
+    <circle cx="1238" cy="243" r="13"/>
+    <circle cx="1424" cy="267" r="13"/>
+  </g>
+  <g fill="none" stroke="#7cf8d5" stroke-width="4" stroke-linejoin="round">
+    <path d="M1157 104h82l28 28v42h-110Z"/>
+    <path d="M1239 104v29h28"/>
+    <path d="M1169 174v24h28v-24M1226 174v24h28v-24"/>
+  </g>
+
+  <g transform="translate(28 22) scale(.36)">
+    <path d="M475.3 144.5 91.5 855 213.1 853.3 512 297.2 677.8 605.9 538.9 608.4 538.9 632.9 691.6 632.9 754.5 750.4 503.8 752.9 551.2 854.1 932.5 855 550.4 145.4Z" fill="url(#mark)"/>
+    <circle cx="498" cy="620.6" r="42" fill="url(#cyan)"/>
+  </g>
+
+  <text x="400" y="170" fill="#f5f7fa" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="700" letter-spacing="10">ARCHIVE</text>
+  <text x="812" y="170" fill="#00e6ef" font-family="Arial, Helvetica, sans-serif" font-size="70" font-weight="700" letter-spacing="10">LOGISTICS</text>
+  <text x="404" y="229" fill="#7cf8d5" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="4">SYNTHETIC ROUTE. CAPACITY. SETTLEMENT FLOW.</text>
+
+  <g transform="translate(405 276)">
+    <rect x="0" y="0" width="172" height="44" rx="8" fill="#101820" stroke="#203241"/>
+    <text x="22" y="29" fill="#dce7ef" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">NEXUS INTAKE</text>
+    <path d="M192 22h54" stroke="#00e6ef" stroke-width="4" stroke-linecap="round"/>
+    <path d="m238 12 14 10-14 10" fill="none" stroke="#00e6ef" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="276" y="0" width="190" height="44" rx="8" fill="#101820" stroke="#203241"/>
+    <text x="298" y="29" fill="#dce7ef" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">ROUTE + ETA</text>
+    <path d="M486 22h54" stroke="#00e6ef" stroke-width="4" stroke-linecap="round"/>
+    <path d="m532 12 14 10-14 10" fill="none" stroke="#00e6ef" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="570" y="0" width="196" height="44" rx="8" fill="#101820" stroke="#203241"/>
+    <text x="592" y="29" fill="#dce7ef" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700">LEDGER OUTBOX</text>
+  </g>
+</svg>

@@ -1,6 +1,8 @@
-﻿# Archive-Logistics
+﻿<p align="center">
+  <img src="docs/brand/archive-logistics-lockup.svg" width="900" alt="Archive-Logistics" />
+</p>
 
-![Logo](./docs/assets/logo.png)
+# Archive-Logistics
 
 Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 받아
 합성(synthetic) 경로/ETA/운송비를 계산하고,
