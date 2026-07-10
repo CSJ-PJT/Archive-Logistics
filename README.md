@@ -20,6 +20,37 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 - 운영/건강 상태 요약, 감사 로그 기록
 - Market-origin 메타데이터(orderId/customerType/expressOrder/riskLevel) 추적
 
+## Core Flow
+
+```text
+Archive-Nexus
+  -> Nexus Logistics Event
+  -> Archive-Logistics Ingestion
+     -> Duplicate Guard
+     -> Workforce Capacity Check
+     -> Synthetic Route / ETA / Cost Calculation
+     -> Route Plan + Route Cost
+     -> Logistics Economy Events
+     -> Outbox
+        -> Archive-Ledger Publish
+        -> Retry / Failed / Skipped Isolation
+     -> Daily Logistics Settlement
+        -> Nexus Compensation Callback
+```
+
+| Stage | Input / State | Logistics Role | Output |
+| --- | --- | --- | --- |
+| `INGESTION` | Nexus 출하/물류 이벤트 | eventId/idempotencyKey 중복 방지 | `nexus_logistics_event` |
+| `WORKFORCE` | synthetic role allocation | 배차, route, delivery, delay capacity 계산 | workday result, backlog, bottleneck |
+| `ROUTE` | origin/destination synthetic code | deterministic matrix 기반 route/ETA 계산 | `route_plan` |
+| `COST` | route, priority, cold-chain, risk | 운송비, surcharge, penalty 계산 | `route_cost` |
+| `ECONOMY` | route/cost/workforce result | 수익/비용/payroll/backlog cost 기록 | logistics revenue/cost events |
+| `OUTBOX` | Ledger-compatible payload | DB Outbox 저장, retry 상태 관리 | `logistics_outbox_event` |
+| `LEDGER` | publishable outbox | Ledger 장애 격리, hop guard 적용 | cost confirmed events |
+| `SETTLEMENT` | published logistics cost | Nexus 대상 일일 보상/청구 정산 | daily settlement callback |
+
+Archive-Logistics는 Archive-Market과 직접 강결합하지 않습니다. Market-origin metadata는 Archive-Nexus가 전달한 payload 안에서만 추적하며, `orderId`, `correlationId`, `settlementCycleId` 기준으로 Ledger 정산 흐름까지 연결합니다.
+
 ## 운영 API
 
 ### 상태/요약
