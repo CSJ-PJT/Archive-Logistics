@@ -331,6 +331,33 @@ public class LogisticsEconomyService {
         return properties.getMaxHop();
     }
 
+    @Transactional
+    public void recordWorkforceCost(String aggregateId,
+                                    String correlationId,
+                                    String causationId,
+                                    String simulationRunId,
+                                    String settlementCycleId,
+                                    LogisticsCostType type,
+                                    long costAmount,
+                                    String reason,
+                                    LocalDateTime now) {
+        if (!properties.isEnabled()) {
+            return;
+        }
+        createCost(
+                aggregateId,
+                correlationId,
+                causationId,
+                simulationRunId,
+                settlementCycleId,
+                type,
+                costAmount,
+                reason,
+                now
+        );
+        recordSnapshot(now.toLocalDate(), "snapshot after workforce cost recording: " + aggregateId, now);
+    }
+
     private Page<LogisticsRevenueEventEntity> resolveRevenuePage(
             Pageable pageable,
             String billedToService,

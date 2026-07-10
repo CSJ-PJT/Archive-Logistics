@@ -8,6 +8,8 @@ import com.csj.archive.logistics.route.RouteCostEntity;
 import com.csj.archive.logistics.route.RoutePlan;
 import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
+import com.csj.archive.logistics.workforce.WorkforceService;
+import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,7 @@ class NexusLogisticsEventServiceTest {
     private final LogisticsEconomyService economyService = mock(LogisticsEconomyService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuditLogService auditLogService = mock(AuditLogService.class);
+    private final WorkforceService workforceService = mock(WorkforceService.class);
     private final com.csj.archive.logistics.common.IdGenerator idGenerator = new com.csj.archive.logistics.common.IdGenerator(
             Clock.fixed(Instant.parse("2026-01-15T00:00:00Z"), ZoneOffset.UTC),
             new com.csj.archive.logistics.common.DeterministicHash()
@@ -75,8 +78,35 @@ class NexusLogisticsEventServiceTest {
                 idGenerator,
                 transactionTemplate,
                 meterRegistry,
-                clock
+                clock,
+                workforceService
         );
+        when(workforceService.workforceSummary()).thenReturn(new WorkforceSummaryResponse(
+                "Archive-Logistics",
+                false,
+                true,
+                java.time.LocalDate.parse("2026-01-15"),
+                "WORKDAY-20260115-TEST",
+                null,
+                2,
+                4,
+                1,
+                302L,
+                0L,
+                302L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                1_450_000L,
+                "PRODUCTIVITY_REPORTED",
+                "NONE"
+        ));
     }
 
     @Test
@@ -148,6 +178,9 @@ class NexusLogisticsEventServiceTest {
         assertThat(payload.path("customerType").asText()).isEqualTo("VIP_CUSTOMER");
         assertThat(payload.path("correlationId").asText()).isEqualTo("CORR-1");
         assertThat(payload.path("marketPriority").asText()).isEqualTo("HIGH");
+        assertThat(payload.path("workdayId").asText()).isEqualTo("WORKDAY-20260115-TEST");
+        assertThat(payload.path("payrollCost").asLong()).isEqualTo(1_450_000L);
+        assertThat(payload.path("bottleneckRole").asText()).isEqualTo("NONE");
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.csj.archive.logistics.economy;
 
 import com.csj.archive.logistics.common.ApiResponse;
 import com.csj.archive.logistics.common.PageResponse;
+import com.csj.archive.logistics.workforce.WorkforceService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,14 +16,17 @@ import java.time.LocalDate;
 @RequestMapping("/api/logistics-economy")
 public class LogisticsEconomyController {
     private final LogisticsEconomyService economyService;
+    private final WorkforceService workforceService;
 
-    public LogisticsEconomyController(LogisticsEconomyService economyService) {
+    public LogisticsEconomyController(LogisticsEconomyService economyService,
+                                      WorkforceService workforceService) {
         this.economyService = economyService;
+        this.workforceService = workforceService;
     }
 
     @GetMapping("/summary")
     public ApiResponse<LogisticsEconomySummaryResponse> summary() {
-        return ApiResponse.ok(economyService.summary());
+        return ApiResponse.ok(economyService.summary().withWorkforce(workforceService.workforceSummary()));
     }
 
     @GetMapping("/revenue-events")

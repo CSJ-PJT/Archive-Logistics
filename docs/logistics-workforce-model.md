@@ -7,11 +7,14 @@ backlog, bottleneck, productivity, synthetic labor cost를 산출한다.
 
 실제 직원 이름, 급여, 개인정보는 사용하지 않는다. 모든 값은 Synthetic Data / Demo Data다.
 
-## 담당 workforce
+## 담당 workforce role
 
-- `dispatchers`: 배차/출고 이벤트 정리 capacity
-- `drivers`: 배송 처리 capacity
-- `delayResponders`: 지연/우회 대응 capacity
+- `DISPATCH_PLANNER`: 배차/출고 이벤트 정리
+- `ROUTE_PLANNER`: route plan 생성
+- `DELIVERY_DRIVER`: 배송 처리
+- `DELAY_RESPONSE_OPERATOR`: 지연/우회 대응
+- `COLD_CHAIN_HANDLER`: cold-chain risk 대응
+- `LOGISTICS_MANAGER`: 전체 logistics 운영 조정
 
 ## 설정
 
@@ -59,6 +62,16 @@ POST /api/workforce/workday/run?date=YYYY-MM-DD
 
 ## Workday 계산
 
+role별 필드:
+
+- `allocatedHeadcount`
+- `capacityPerPersonPerDay`
+- `productivityScore`
+- `wagePerDay`
+- `effectiveCapacity`
+- `usedCapacity`
+- `remainingCapacity`
+
 workload:
 
 - 해당 일자 route plan 수
@@ -67,16 +80,14 @@ workload:
 
 capacity:
 
-- `dispatchers * dispatcherDailyCapacity`
-- `drivers * driverDailyCapacity`
-- `delayResponders * delayResponderDailyCapacity`
+- `allocatedHeadcount * capacityPerPersonPerDay * productivityScore`
 
 결과:
 
 - `processedEvents = min(workloadEvents, capacityEvents)`
 - `backlogEvents = max(0, workloadEvents - capacityEvents)`
 - `status = BOTTLENECK_DETECTED` 또는 `PRODUCTIVITY_REPORTED`
-- `bottleneckType = OUTBOX_PUBLISH_CAPACITY`, `DELAY_RESPONSE_CAPACITY`, `NONE`
+- `bottleneckType = DELIVERY_DRIVER`, `ROUTE_PLANNER`, `DELAY_RESPONSE_OPERATOR`, `COLD_CHAIN_HANDLER`, `OUTBOX_PUBLISH_CAPACITY`, `NONE`
 
 ## ArchiveOS 연동
 

@@ -16,6 +16,8 @@ import com.csj.archive.logistics.route.RoutePlan;
 import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.route.SyntheticRouteCalculator;
+import com.csj.archive.logistics.workforce.WorkforceService;
+import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -48,6 +50,7 @@ public class NexusLogisticsEventService {
     private final TransactionTemplate transactionTemplate;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
+    private final WorkforceService workforceService;
 
     public NexusLogisticsEventService(NexusEventRepository nexusEventRepository,
                                       RoutePlanRepository routePlanRepository,
@@ -61,7 +64,8 @@ public class NexusLogisticsEventService {
                                       IdGenerator idGenerator,
                                       TransactionTemplate transactionTemplate,
                                       MeterRegistry meterRegistry,
-                                      Clock clock) {
+                                      Clock clock,
+                                      WorkforceService workforceService) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
         this.routeCostRepository = routeCostRepository;
@@ -75,6 +79,7 @@ public class NexusLogisticsEventService {
         this.transactionTemplate = transactionTemplate;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
+        this.workforceService = workforceService;
     }
 
     public EventProcessingResult process(NexusLogisticsEventRequest request) {
@@ -256,6 +261,7 @@ public class NexusLogisticsEventService {
         String safeCorrelationId = metadata == null || metadata.correlationId() == null ? correlationId : metadata.correlationId();
         String safeCausationId = metadata == null || metadata.causationId() == null ? causationId : metadata.causationId();
         String sourceChain = "Archive-Market -> Archive-Nexus -> Archive-Logitics";
+        WorkforceSummaryResponse workforce = workforceService.workforceSummary();
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sourceService", "Archive-Logistics");
         payload.put("billedToService", "Archive-Nexus");
@@ -272,6 +278,14 @@ public class NexusLogisticsEventService {
         payload.put("marketPriority", routePlan.marketPriority());
         payload.put("riskLevel", routePlan.riskLevel());
         payload.put("expressOrder", routePlan.expressOrder());
+        payload.put("workdayId", workforce.workdayId());
+        payload.put("workforceAllocationId", workforce.allocationId());
+        payload.put("productivityScore", workforce.capacityEvents() <= 0 ? 0 : (double) workforce.processedEvents() / workforce.capacityEvents());
+        payload.put("driverCapacityUsed", workforce.deliveryCompleted());
+        payload.put("backlogCount", workforce.backlogEvents());
+        payload.put("delayedCount", workforce.shipmentsDelayed());
+        payload.put("bottleneckRole", workforce.bottleneckType());
+        payload.put("payrollCost", workforce.syntheticLaborCost());
         payload.put("factoryId", routePlan.factoryId());
         payload.put("shipmentId", routePlan.shipmentId());
         payload.put("vendorId", routePlan.vendorId());

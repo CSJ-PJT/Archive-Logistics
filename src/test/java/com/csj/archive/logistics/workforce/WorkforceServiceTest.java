@@ -2,6 +2,7 @@ package com.csj.archive.logistics.workforce;
 
 import com.csj.archive.logistics.common.DeterministicHash;
 import com.csj.archive.logistics.common.IdGenerator;
+import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.outbox.LogisticsOutboxRepository;
 import com.csj.archive.logistics.outbox.OutboxStatus;
 import com.csj.archive.logistics.route.RoutePlanRepository;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +28,7 @@ class WorkforceServiceTest {
     private final RoutePlanRepository routePlanRepository = mock(RoutePlanRepository.class);
     private final LogisticsOutboxRepository outboxRepository = mock(LogisticsOutboxRepository.class);
     private final WorkforceProperties properties = new WorkforceProperties();
+    private final LogisticsEconomyService economyService = mock(LogisticsEconomyService.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-07-10T00:00:00Z"), ZoneOffset.UTC);
     private final IdGenerator idGenerator = new IdGenerator(clock, new DeterministicHash());
 
@@ -41,11 +44,48 @@ class WorkforceServiceTest {
 
         assertThat(summary.workforceEnabled()).isFalse();
         assertThat(summary.baselineCapacity()).isTrue();
-        assertThat(summary.capacityEvents()).isEqualTo(210L);
+        assertThat(summary.capacityEvents()).isEqualTo(302L);
         assertThat(summary.workloadEvents()).isEqualTo(17L);
         assertThat(summary.backlogEvents()).isZero();
         assertThat(summary.status()).isEqualTo("PRODUCTIVITY_REPORTED");
     }
+
+    @Test
+    void workforceAllocationStoresRoleRows() {
+        properties.setEnabled(true);
+        WorkforceService service = service();
+        when(allocationRepository.existsByWorkdayIdAndRoleType(any(), any())).thenReturn(false);
+        when(allocationRepository.save(any(WorkforceAllocationEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        WorkforceAllocationResponse response = service.assign(new WorkforceAllocationRequest(
+                "ArchiveOS",
+                "Archive-Logistics",
+                LocalDate.parse("2026-07-10"),
+                "WORKDAY-20260710",
+                List.of(
+                        new WorkforceAllocationRequest.RoleAllocation(LogisticsWorkforceRole.ROUTE_PLANNER, 1, 30, java.math.BigDecimal.ONE, 190_000L),
+                        new WorkforceAllocationRequest.RoleAllocation(LogisticsWorkforceRole.DELIVERY_DRIVER, 2, 8, java.math.BigDecimal.ONE, 220_000L)
+                ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "SIM-1",
+                "CYCLE-1",
+                "CORR-1",
+                "CAUSE-1",
+                0,
+                5,
+                "role based allocation"
+        ));
+
+        assertThat(response.roles()).hasSize(2);
+        assertThat(response.totalEffectiveCapacity()).isEqualTo(46L);
+        assertThat(response.payrollCost()).isEqualTo(630_000L);
+    }
+
 
     @Test
     void enabledWorkforceAllocationCanDetectCapacityShortage() {
@@ -59,10 +99,21 @@ class WorkforceServiceTest {
                 "WF-ALLOC-20260710-TEST",
                 new WorkforceAllocationRequest(
                         "ArchiveOS",
+                        "Archive-Logistics",
                         date,
                         "WORKDAY-20260710",
+                        java.util.List.of(new WorkforceAllocationRequest.RoleAllocation(
+                                LogisticsWorkforceRole.DELIVERY_DRIVER,
+                                1,
+                                1,
+                                java.math.BigDecimal.ONE,
+                                400_000L
+                        )),
                         1,
+                        0,
                         1,
+                        0,
+                        0,
                         0,
                         "SIM-1",
                         "CYCLE-1",
@@ -72,13 +123,16 @@ class WorkforceServiceTest {
                         5,
                         "test allocation"
                 ),
+                LogisticsWorkforceRole.DELIVERY_DRIVER,
+                1,
+                1,
+                java.math.BigDecimal.ONE,
                 400_000L,
                 5,
                 java.time.LocalDateTime.now(clock)
         );
 
-        when(allocationRepository.findTopByWorkDateLessThanEqualOrderByWorkDateDescCreatedAtDesc(eq(date)))
-                .thenReturn(Optional.of(allocation));
+        when(allocationRepository.findByWorkDate(eq(date))).thenReturn(java.util.List.of(allocation));
         when(productivityRepository.findByWorkDate(date)).thenReturn(Optional.empty());
         when(productivityRepository.save(any(WorkdayProductivityEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(routePlanRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(10L);
@@ -89,11 +143,11 @@ class WorkforceServiceTest {
 
         assertThat(result.workforceEnabled()).isTrue();
         assertThat(result.baselineCapacity()).isFalse();
-        assertThat(result.capacityEvents()).isEqualTo(2L);
+        assertThat(result.capacityEvents()).isEqualTo(1L);
         assertThat(result.workloadEvents()).isEqualTo(17L);
-        assertThat(result.backlogEvents()).isEqualTo(15L);
+        assertThat(result.backlogEvents()).isEqualTo(16L);
         assertThat(result.status()).isEqualTo("BOTTLENECK_DETECTED");
-        assertThat(result.bottleneckType()).isEqualTo("OUTBOX_PUBLISH_CAPACITY");
+        assertThat(result.bottleneckType()).isEqualTo("DELIVERY_DRIVER");
     }
 
     private WorkforceService service() {
@@ -104,7 +158,8 @@ class WorkforceServiceTest {
                 outboxRepository,
                 properties,
                 idGenerator,
-                clock
+                clock,
+                economyService
         );
     }
 }

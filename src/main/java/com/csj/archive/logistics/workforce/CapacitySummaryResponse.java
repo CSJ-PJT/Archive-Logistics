@@ -8,6 +8,8 @@ public record CapacitySummaryResponse(
         boolean workforceEnabled,
         boolean baselineCapacity,
         long capacityEvents,
+        long usedCapacity,
+        long remainingCapacity,
         long workloadEvents,
         long backlogEvents,
         long shortageEvents,

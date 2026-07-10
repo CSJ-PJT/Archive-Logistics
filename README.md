@@ -89,6 +89,8 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 Archive-Logistics는 synthetic dispatcher/driver/delay responder 배정에 따라
 일별 capacity, backlog, bottleneck, productivity, synthetic labor cost를 계산합니다.
 `ARCHIVE_WORKFORCE_ENABLED=false`이면 기존 baseline capacity로 동작하므로 기존 이벤트 처리 흐름은 유지됩니다.
+역할은 `DISPATCH_PLANNER`, `ROUTE_PLANNER`, `DELIVERY_DRIVER`, `DELAY_RESPONSE_OPERATOR`,
+`COLD_CHAIN_HANDLER`, `LOGISTICS_MANAGER`를 지원합니다.
 
 ## Internationalization
 
@@ -160,6 +162,8 @@ curl.exe http://localhost:8092/api/logistics-economy/summary
 - [Logistics Economy Daily Settlement](./docs/logistics-daily-settlement.md)
 - [Market Origin Metadata](./docs/market-origin-logistics-metadata.md)
 - [Logistics Workforce Model](./docs/logistics-workforce-model.md)
+- [Logistics Productivity Model](./docs/logistics-productivity-model.md)
+- [Workforce Event Contract](./docs/workforce-event-contract.md)
 - [Game Economy Economics Notes](./docs/game-economy-logistics.md)
 - [Operations Runbook](./docs/operations-runbook.md)
 - [OCI Lite Profile](./docs/oci-lite-profile.md)

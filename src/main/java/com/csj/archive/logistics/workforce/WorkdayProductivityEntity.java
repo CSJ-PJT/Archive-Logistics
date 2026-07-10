@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "logistics_workday_productivity")
+@Table(name = "logistics_workday_result")
 public class WorkdayProductivityEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,13 +45,34 @@ public class WorkdayProductivityEntity {
     @Column(name = "workload_events", nullable = false)
     private long workloadEvents;
 
-    @Column(name = "capacity_events", nullable = false)
+    @Column(name = "total_capacity", nullable = false)
     private long capacityEvents;
+
+    @Column(name = "used_capacity", nullable = false)
+    private long usedCapacity;
+
+    @Column(name = "remaining_capacity", nullable = false)
+    private long remainingCapacity;
+
+    @Column(name = "shipments_requested", nullable = false)
+    private long shipmentsRequested;
+
+    @Column(name = "shipments_dispatched", nullable = false)
+    private long shipmentsDispatched;
+
+    @Column(name = "shipments_delayed", nullable = false)
+    private long shipmentsDelayed;
+
+    @Column(name = "route_plans_created", nullable = false)
+    private long routePlansCreated;
+
+    @Column(name = "delivery_completed", nullable = false)
+    private long deliveryCompleted;
 
     @Column(name = "processed_events", nullable = false)
     private long processedEvents;
 
-    @Column(name = "backlog_events", nullable = false)
+    @Column(name = "backlog_count", nullable = false)
     private long backlogEvents;
 
     @Column(name = "shortage_events", nullable = false)
@@ -66,13 +87,13 @@ public class WorkdayProductivityEntity {
     @Column(name = "utilization_rate", nullable = false, precision = 7, scale = 4)
     private BigDecimal utilizationRate;
 
-    @Column(name = "synthetic_labor_cost", nullable = false)
+    @Column(name = "payroll_cost", nullable = false)
     private long syntheticLaborCost;
 
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
-    @Column(name = "bottleneck_type", nullable = false, length = 50)
+    @Column(name = "bottleneck_role", nullable = false, length = 50)
     private String bottleneckType;
 
     @Column(name = "created_at", nullable = false)
@@ -96,6 +117,13 @@ public class WorkdayProductivityEntity {
         this.delayResponders = result.delayResponders();
         this.workloadEvents = result.workloadEvents();
         this.capacityEvents = result.capacityEvents();
+        this.usedCapacity = result.usedCapacity();
+        this.remainingCapacity = result.remainingCapacity();
+        this.shipmentsRequested = result.shipmentsRequested();
+        this.shipmentsDispatched = result.shipmentsDispatched();
+        this.shipmentsDelayed = result.shipmentsDelayed();
+        this.routePlansCreated = result.routePlansCreated();
+        this.deliveryCompleted = result.deliveryCompleted();
         this.processedEvents = result.processedEvents();
         this.backlogEvents = result.backlogEvents();
         this.shortageEvents = result.shortageEvents();
@@ -146,6 +174,34 @@ public class WorkdayProductivityEntity {
 
     public long capacityEvents() {
         return capacityEvents;
+    }
+
+    public long usedCapacity() {
+        return usedCapacity;
+    }
+
+    public long remainingCapacity() {
+        return remainingCapacity;
+    }
+
+    public long shipmentsRequested() {
+        return shipmentsRequested;
+    }
+
+    public long shipmentsDispatched() {
+        return shipmentsDispatched;
+    }
+
+    public long shipmentsDelayed() {
+        return shipmentsDelayed;
+    }
+
+    public long routePlansCreated() {
+        return routePlansCreated;
+    }
+
+    public long deliveryCompleted() {
+        return deliveryCompleted;
     }
 
     public long processedEvents() {
