@@ -85,7 +85,7 @@ h1 {
 }
 
 .language-selector select {
-  width: 96px;
+  width: 108px;
   height: 30px;
   min-width: 0;
   border: 0;
@@ -412,12 +412,10 @@ dd {
   }
 
   .language-selector {
-    max-width: 46px;
-    overflow: hidden;
+    max-width: none;
   }
 
   .language-selector select {
-    width: 18px;
-    color: transparent;
+    width: 108px;
   }
 }

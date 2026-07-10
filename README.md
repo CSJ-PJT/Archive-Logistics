@@ -78,6 +78,14 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 - Factory/도착지/벤더 코드는 전부 synthetic 값입니다.
 - route 계산은 deterministic matrix/hash 기반입니다.
 
+## Internationalization
+
+- 웹 관제 화면은 한국어(`ko`), English(`en`), 日本語(`ja`), 简体中文(`zh-CN`)을 지원합니다.
+- 우측 상단 지구본 메뉴에서 즉시 언어를 전환할 수 있습니다.
+- 선택 언어는 `localStorage`의 `archive.locale` key에 저장되어 새로고침 후에도 유지됩니다.
+- API path, eventType, enum, traceId, correlationId 같은 시스템 식별자는 번역하지 않고 UI label만 번역합니다.
+- 일부 내부 호환 key와 source literal에는 기존 계약 유지를 위해 `Archive-Logitics` / `logitics` 표기가 남을 수 있습니다.
+
 ## `/api/routes/summary` 500 이슈
 
 `factoryId`, `date` 쿼리 조합에서 발생하던 `could not determine data type` 이슈는

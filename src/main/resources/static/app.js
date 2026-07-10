@@ -1,38 +1,25 @@
+const i18n = window.ArchiveLogisticsI18n;
+
 const state = {
-  operations: null,
-  routeSummary: null,
-  outbox: null,
-  nexusSettlement: null,
+  locale: i18n.readLocale(),
+  operationsPayload: null,
+  routeSummaryPayload: null,
+  outboxPayload: null,
+  nexusSettlementPayload: null,
+  lastPublishPayload: null,
+  lastNexusSettlementPayload: null,
 };
 
 const $ = (id) => document.getElementById(id);
-const languages = ["ko", "en", "ja", "zh"];
+const localeMap = {
+  ko: "ko-KR",
+  en: "en-US",
+  ja: "ja-JP",
+  "zh-CN": "zh-CN",
+};
 
-function initLanguageSelector() {
-  const selector = $("languageSelector");
-  if (!selector) return;
-  const saved = localStorage.getItem("archive-logistics-language");
-  const language = languages.includes(saved) ? saved : "ko";
-  selector.value = language;
-  document.documentElement.lang = language;
-  document.documentElement.dataset.language = language;
-  selector.addEventListener("change", () => {
-    localStorage.setItem("archive-logistics-language", selector.value);
-    document.documentElement.lang = selector.value;
-    document.documentElement.dataset.language = selector.value;
-  });
-}
-
-function formatNumber(value) {
-  return Number(value || 0).toLocaleString("ko-KR");
-}
-
-function formatCurrency(value) {
-  return `${formatNumber(value)} KRW`;
-}
-
-function nowText() {
-  return new Date().toLocaleString("ko-KR", { hour12: false });
+function t(key, params = {}) {
+  return i18n.t(state.locale, key, params);
 }
 
 function setText(id, value) {
@@ -42,9 +29,85 @@ function setText(id, value) {
   }
 }
 
-function logActivity(title, detail = "") {
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString(localeMap[state.locale] || "ko-KR");
+}
+
+function formatCurrency(value) {
+  return t("common.currencyKrw", { value: formatNumber(value) });
+}
+
+function nowText() {
+  return new Date().toLocaleString(localeMap[state.locale] || "ko-KR", { hour12: false });
+}
+
+function statusLabel(code) {
+  if (!code) return "-";
+  return t(`status.${code}`, {});
+}
+
+function booleanLabel(value) {
+  return value ? t("common.true") : t("common.false");
+}
+
+function applyTranslations() {
+  document.documentElement.lang = state.locale;
+  document.documentElement.dataset.language = state.locale;
+  document.title = t("page.title");
+
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    element.setAttribute("title", t(element.dataset.i18nTitle));
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+  });
+}
+
+function renderStoredData() {
+  if (state.operationsPayload) updateOperations(state.operationsPayload);
+  if (state.routeSummaryPayload) updateRouteSummary(state.routeSummaryPayload);
+  if (state.outboxPayload) updateOutbox(state.outboxPayload);
+  if (state.nexusSettlementPayload) updateNexusSettlement(state.nexusSettlementPayload);
+  if (state.lastPublishPayload) renderLastPublish(state.lastPublishPayload);
+  if (state.lastNexusSettlementPayload) renderLastNexusSettlement(state.lastNexusSettlementPayload);
+}
+
+function setLocale(locale) {
+  state.locale = i18n.normalizeLocale(locale);
+  localStorage.setItem(i18n.storageKey, state.locale);
+  localStorage.removeItem("archive-logistics-language");
+  const selector = $("languageSelector");
+  if (selector) {
+    selector.value = state.locale;
+  }
+  applyTranslations();
+  renderStoredData();
+}
+
+function initLanguageSelector() {
+  const selector = $("languageSelector");
+  if (!selector) return;
+
+  for (const option of selector.options) {
+    option.textContent = i18n.localeNames[option.value] || option.textContent;
+  }
+  selector.value = state.locale;
+  selector.addEventListener("change", () => setLocale(selector.value));
+  setLocale(state.locale);
+}
+
+function logActivity(titleKey, detail = "") {
   const list = $("activityLog");
+  if (!list) return;
+
   const item = document.createElement("li");
+  const title = t(titleKey);
   item.innerHTML = `<strong>${title}</strong>${detail ? ` - ${detail}` : ""}`;
   list.prepend(item);
   while (list.children.length > 9) {
@@ -90,13 +153,13 @@ function routeSummaryUrl() {
 }
 
 function updateOperations(payload) {
+  state.operationsPayload = payload;
   const data = payload.data || {};
-  state.operations = data;
 
-  setText("traceId", `trace ${payload.traceId || "-"}`);
-  setText("serviceStatus", data.status || "-");
+  setText("traceId", t("common.trace", { traceId: payload.traceId || "-" }));
+  setText("serviceStatus", statusLabel(data.status));
   setText("profile", data.profile || "-");
-  setText("ledgerStatus", data.ledger?.status || "-");
+  setText("ledgerStatus", statusLabel(data.ledger?.status));
   setText("receivedEvents", formatNumber(data.receivedEvents));
   setText("processedEvents", formatNumber(data.processedEvents));
   setText("duplicateEvents", formatNumber(data.duplicateEvents));
@@ -107,19 +170,19 @@ function updateOperations(payload) {
   setText("riskDelayed", formatNumber(data.risk?.delayedRoutes));
   setText("riskDeviation", formatNumber(data.risk?.deviatedRoutes));
   setText("riskColdChain", formatNumber(data.risk?.coldChainRisk));
-  setText("ledgerMode", data.ledger?.enabled ? "ENABLED" : "DRY_RUN");
-  setText("ledgerEnabled", String(Boolean(data.ledger?.enabled)));
+  setText("ledgerMode", data.ledger?.enabled ? statusLabel("ENABLED") : statusLabel("DRY_RUN"));
+  setText("ledgerEnabled", booleanLabel(Boolean(data.ledger?.enabled)));
   const ledgerBase = data.ledger?.baseUrl || "";
   const ledgerPath = data.ledger?.bulkEndpoint || "";
   setText("ledgerEndpoint", ledgerBase ? `${ledgerBase.replace(/\/+$/, "")}${ledgerPath.startsWith("/") ? ledgerPath : `/${ledgerPath}`}` : "-");
   setText("contractMode", data.ledger?.contractMode || "-");
-  setText("usedHeap", `${formatNumber(data.memory?.usedHeapMb)} MB`);
+  setText("usedHeap", t("common.usedHeapValue", { value: formatNumber(data.memory?.usedHeapMb) }));
   setText("lastRefresh", nowText());
 }
 
 function updateRouteSummary(payload) {
+  state.routeSummaryPayload = payload;
   const data = payload.data || {};
-  state.routeSummary = data;
 
   setText("summaryRoutes", formatNumber(data.routePlans));
   setText("totalCost", formatCurrency(data.totalCost));
@@ -128,8 +191,8 @@ function updateRouteSummary(payload) {
 }
 
 function updateOutbox(payload) {
+  state.outboxPayload = payload;
   const data = payload.data || {};
-  state.outbox = data;
 
   const pending = Number(data.pending || 0);
   const published = Number(data.published || 0);
@@ -140,7 +203,7 @@ function updateOutbox(payload) {
   const percent = (value) => `${total ? Math.max((value / total) * 100, value ? 3 : 0) : 0}%`;
 
   setText("outboxPending", formatNumber(pending));
-  setText("outboxTotal", `${formatNumber(total)} events`);
+  setText("outboxTotal", t("common.events", { count: formatNumber(total) }));
   setText("pendingCount", formatNumber(pending));
   setText("publishedCount", formatNumber(published));
   setText("retryCount", formatNumber(retry));
@@ -155,26 +218,44 @@ function updateOutbox(payload) {
 }
 
 function updateNexusSettlement(payload) {
+  state.nexusSettlementPayload = payload;
   if (payload.error) {
-    setText("nexusSettlementStatus", "ERROR");
+    setText("nexusSettlementStatus", statusLabel("ERROR"));
     setText("nexusSettlementMode", payload.error.message);
     return;
   }
 
   const data = payload.data || {};
-  state.nexusSettlement = data;
-
   const totalRows = Number(data.totalSettlements || 0);
   const sent = Number(data.sent || 0);
   const dryRun = Number(data.dryRun || 0);
   const retry = Number(data.retry || 0);
   const failed = Number(data.failed || 0);
+  const status = failed ? "FAILED" : retry ? "RETRY" : sent ? "SENT" : dryRun ? "DRY_RUN" : "READY";
 
   setText("nexusSettlementRows", formatNumber(totalRows));
   setText("nexusSettlementSent", `${formatNumber(sent)} / ${formatNumber(dryRun)}`);
   setText("nexusManufacturingCost", formatCurrency(data.totalManufacturingImpactCost));
-  setText("nexusSettlementStatus", failed ? "FAILED" : retry ? "RETRY" : sent ? "SENT" : dryRun ? "DRY_RUN" : "READY");
-  setText("nexusSettlementMode", "PUBLISHED outbox basis");
+  setText("nexusSettlementStatus", statusLabel(status));
+  setText("nexusSettlementMode", t("settlement.outboxBasis"));
+}
+
+function renderLastPublish(data) {
+  setText("lastPublish", t("activity.publishSummary", {
+    status: statusLabel(data.status || "-"),
+    requested: formatNumber(data.requestedCount),
+    published: formatNumber(data.publishedCount),
+    retry: formatNumber(data.retriedCount),
+    skipped: formatNumber(data.skippedCount),
+  }));
+}
+
+function renderLastNexusSettlement(data) {
+  setText("lastNexusSettlement", t("activity.nexusSettlementSummary", {
+    sent: formatNumber(data.sentCount || 0),
+    dryRun: formatNumber(data.dryRunCount || 0),
+    skipped: formatNumber(data.skippedCount || 0),
+  }));
 }
 
 async function refresh() {
@@ -191,9 +272,9 @@ async function refresh() {
     updateRouteSummary(routeSummary);
     updateOutbox(outbox);
     updateNexusSettlement(nexusSettlement);
-    logActivity("Refresh", "operations, route, outbox, settlement summary loaded");
+    logActivity("activity.refresh", t("activity.refreshLoaded"));
   } catch (error) {
-    logActivity("Refresh failed", error.message);
+    logActivity("activity.refreshFailed", error.message);
   } finally {
     $("refreshButton").disabled = false;
   }
@@ -204,10 +285,13 @@ async function simulate() {
   try {
     const result = await request("/api/simulations/shipments?count=100", { method: "POST" });
     const data = result.data || {};
-    logActivity("Simulation", `processed ${formatNumber(data.processedCount)} / outbox ${formatNumber(data.outboxCreatedCount)}`);
+    logActivity("activity.simulation", t("activity.simulationDetail", {
+      processed: formatNumber(data.processedCount),
+      outbox: formatNumber(data.outboxCreatedCount),
+    }));
     await refresh();
   } catch (error) {
-    logActivity("Simulation failed", error.message);
+    logActivity("activity.simulationFailed", error.message);
   } finally {
     $("simulateButton").disabled = false;
   }
@@ -218,11 +302,12 @@ async function publishOutbox() {
   try {
     const result = await request("/api/outbox/publish", { method: "POST" });
     const data = result.data || {};
-    setText("lastPublish", `${data.status || "-"} | requested ${formatNumber(data.requestedCount)} | published ${formatNumber(data.publishedCount)} | retry ${formatNumber(data.retriedCount)} | skipped ${formatNumber(data.skippedCount)}`);
-    logActivity("Publish", data.message || data.status || "completed");
+    state.lastPublishPayload = data;
+    renderLastPublish(data);
+    logActivity("activity.publish", statusLabel(data.status) || t("activity.completed"));
     await refresh();
   } catch (error) {
-    logActivity("Publish failed", error.message);
+    logActivity("activity.publishFailed", error.message);
   } finally {
     $("publishButton").disabled = false;
   }
@@ -233,11 +318,15 @@ async function runNexusSettlement() {
   try {
     const result = await request("/api/settlements/nexus-daily/run", { method: "POST" });
     const data = result.data || {};
-    setText("lastNexusSettlement", `${data.sentCount || 0} sent / ${data.dryRunCount || 0} dry-run / ${data.skippedCount || 0} skipped`);
-    logActivity("Nexus Settlement", `date ${data.settlementDate || "-"} | factories ${formatNumber(data.requestedFactoryCount)}`);
+    state.lastNexusSettlementPayload = data;
+    renderLastNexusSettlement(data);
+    logActivity("activity.nexusSettlement", t("activity.nexusSettlementDetail", {
+      date: data.settlementDate || "-",
+      factories: formatNumber(data.requestedFactoryCount),
+    }));
     await refresh();
   } catch (error) {
-    logActivity("Nexus settlement failed", error.message);
+    logActivity("activity.nexusSettlementFailed", error.message);
   } finally {
     $("settlementButton").disabled = false;
   }
