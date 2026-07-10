@@ -13,6 +13,7 @@ public record OperationsSummaryResponse(
         Outbox outbox,
         Risk risk,
         MarketOrigin marketOrigin,
+        Workforce workforce,
         Ledger ledger,
         Memory memory
 ) {
@@ -28,6 +29,18 @@ public record OperationsSummaryResponse(
             long expressOrderRoutes,
             long vipCustomerRoutes,
             long highRiskCustomerRoutes
+    ) {
+    }
+
+    public record Workforce(
+            boolean enabled,
+            boolean baselineCapacity,
+            long capacityEvents,
+            long workloadEvents,
+            long backlogEvents,
+            long shortageEvents,
+            String status,
+            String bottleneckType
     ) {
     }
 

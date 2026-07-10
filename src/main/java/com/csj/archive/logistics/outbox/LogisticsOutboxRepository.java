@@ -24,6 +24,8 @@ public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutbox
 
     long countByStatus(OutboxStatus status);
 
+    long countByStatusIn(Collection<OutboxStatus> statuses);
+
     @Query("""
             select e from LogisticsOutboxEntity e
             where e.status in :statuses

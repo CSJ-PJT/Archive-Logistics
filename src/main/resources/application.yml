@@ -75,3 +75,15 @@ archive:
   economy:
     enabled: ${ARCHIVE_ECONOMY_ENABLED:false}
     publish-enabled: ${ARCHIVE_ECONOMY_PUBLISH_ENABLED:false}
+  workforce:
+    enabled: ${ARCHIVE_WORKFORCE_ENABLED:false}
+    baseline-dispatchers: ${ARCHIVE_WORKFORCE_BASELINE_DISPATCHERS:2}
+    baseline-drivers: ${ARCHIVE_WORKFORCE_BASELINE_DRIVERS:4}
+    baseline-delay-responders: ${ARCHIVE_WORKFORCE_BASELINE_DELAY_RESPONDERS:1}
+    dispatcher-daily-capacity: ${ARCHIVE_WORKFORCE_DISPATCHER_DAILY_CAPACITY:25}
+    driver-daily-capacity: ${ARCHIVE_WORKFORCE_DRIVER_DAILY_CAPACITY:35}
+    delay-responder-daily-capacity: ${ARCHIVE_WORKFORCE_DELAY_RESPONDER_DAILY_CAPACITY:20}
+    dispatcher-daily-cost: ${ARCHIVE_WORKFORCE_DISPATCHER_DAILY_COST:180000}
+    driver-daily-cost: ${ARCHIVE_WORKFORCE_DRIVER_DAILY_COST:220000}
+    delay-responder-daily-cost: ${ARCHIVE_WORKFORCE_DELAY_RESPONDER_DAILY_COST:200000}
+    max-hop: ${ARCHIVE_WORKFORCE_MAX_HOP:5}

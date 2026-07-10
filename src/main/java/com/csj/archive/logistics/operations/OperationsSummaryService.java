@@ -10,6 +10,8 @@ import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.economy.LogisticsEconomySummaryResponse;
+import com.csj.archive.logistics.workforce.WorkforceService;
+import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class OperationsSummaryService {
     private final LogisticsEconomyService economyService;
     private final AuditLogService auditLogService;
     private final LedgerPublishProperties ledgerProperties;
+    private final WorkforceService workforceService;
     private final Environment environment;
 
     public OperationsSummaryService(NexusEventRepository nexusEventRepository,
@@ -35,6 +38,7 @@ public class OperationsSummaryService {
                                     LogisticsEconomyService economyService,
                                     AuditLogService auditLogService,
                                     LedgerPublishProperties ledgerProperties,
+                                    WorkforceService workforceService,
                                     Environment environment) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
@@ -43,6 +47,7 @@ public class OperationsSummaryService {
         this.economyService = economyService;
         this.auditLogService = auditLogService;
         this.ledgerProperties = ledgerProperties;
+        this.workforceService = workforceService;
         this.environment = environment;
     }
 
@@ -50,6 +55,7 @@ public class OperationsSummaryService {
         long failedEvents = nexusEventRepository.countByStatus(NexusEventStatus.FAILED);
         long outboxFailed = outboxRepository.countByStatus(OutboxStatus.FAILED);
         LogisticsEconomySummaryResponse economy = economyService.summary();
+        WorkforceSummaryResponse workforce = workforceService.workforceSummary();
         Runtime runtime = Runtime.getRuntime();
         long usedHeap = runtime.totalMemory() - runtime.freeMemory();
         return new OperationsSummaryResponse(
@@ -86,6 +92,16 @@ public class OperationsSummaryService {
                         routePlanRepository.countByExpressOrderTrue(),
                         routePlanRepository.countByCustomerType("VIP_CUSTOMER"),
                         routePlanRepository.countByHighRiskCustomerOrRiskLevel("HIGH_RISK_CUSTOMER", 4)
+                ),
+                new OperationsSummaryResponse.Workforce(
+                        workforce.workforceEnabled(),
+                        workforce.baselineCapacity(),
+                        workforce.capacityEvents(),
+                        workforce.workloadEvents(),
+                        workforce.backlogEvents(),
+                        workforce.shortageEvents(),
+                        workforce.status(),
+                        workforce.bottleneckType()
                 ),
                 new OperationsSummaryResponse.Ledger(
                         ledgerProperties.isEnabled(),

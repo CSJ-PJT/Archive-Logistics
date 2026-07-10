@@ -35,6 +35,9 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 - `GET /api/logistics-economy/profit-snapshots`
 - `GET /api/logistics-settlements`
 - `GET /api/logistics-settlements/summary`
+- `GET /api/workforce/summary`
+- `GET /api/productivity/summary`
+- `GET /api/capacity/summary`
 
 ### 이벤트 수신/시뮬레이션
 
@@ -46,6 +49,8 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 
 - `POST /api/logistics-settlements/daily/run?date=YYYY-MM-DD`
 - `GET /api/logistics-settlements/{settlementId}`
+- `POST /api/workforce/allocations`
+- `POST /api/workforce/workday/run?date=YYYY-MM-DD`
 
 ### Outbox/API Publish
 
@@ -78,6 +83,12 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 - 실제 지도 API, 실제 차량/주소/배송/개인정보는 사용하지 않습니다.
 - Factory/도착지/벤더 코드는 전부 synthetic 값입니다.
 - route 계산은 deterministic matrix/hash 기반입니다.
+
+## Operational Workforce
+
+Archive-Logistics는 synthetic dispatcher/driver/delay responder 배정에 따라
+일별 capacity, backlog, bottleneck, productivity, synthetic labor cost를 계산합니다.
+`ARCHIVE_WORKFORCE_ENABLED=false`이면 기존 baseline capacity로 동작하므로 기존 이벤트 처리 흐름은 유지됩니다.
 
 ## Internationalization
 
@@ -148,6 +159,7 @@ curl.exe http://localhost:8092/api/logistics-economy/summary
 - [Logistics Economy Model](./docs/logistics-economy-model.md)
 - [Logistics Economy Daily Settlement](./docs/logistics-daily-settlement.md)
 - [Market Origin Metadata](./docs/market-origin-logistics-metadata.md)
+- [Logistics Workforce Model](./docs/logistics-workforce-model.md)
 - [Game Economy Economics Notes](./docs/game-economy-logistics.md)
 - [Operations Runbook](./docs/operations-runbook.md)
 - [OCI Lite Profile](./docs/oci-lite-profile.md)

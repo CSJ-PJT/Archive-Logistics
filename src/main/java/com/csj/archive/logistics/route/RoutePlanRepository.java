@@ -24,6 +24,14 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
 
     long countByRequiresColdChainTrueAndDelayedTrue();
 
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            java.time.LocalDateTime start,
+            java.time.LocalDateTime end);
+
+    long countByDelayedTrueAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            java.time.LocalDateTime start,
+            java.time.LocalDateTime end);
+
     long countByOrderIdNotNull();
 
     long countByExpressOrderTrue();
