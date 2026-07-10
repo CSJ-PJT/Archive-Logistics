@@ -51,6 +51,50 @@ Archive-Nexus
 
 Archive-Logistics는 Archive-Market과 직접 강결합하지 않습니다. Market-origin metadata는 Archive-Nexus가 전달한 payload 안에서만 추적하며, `orderId`, `correlationId`, `settlementCycleId` 기준으로 Ledger 정산 흐름까지 연결합니다.
 
+## Ecosystem Flow
+
+```text
+Archive-Market
+  -> demand / order / payment / claim events
+  -> Archive-Nexus
+     -> production / inventory / shipment events
+     -> Archive-Logistics
+        -> workforce capacity
+        -> synthetic route / ETA / delivery cost
+        -> delay / deviation / cold-chain risk
+        -> logistics outbox
+        -> Archive-Ledger
+           -> transaction normalization
+           -> ledger entries
+           -> daily settlement
+           -> reconciliation
+        -> Nexus daily logistics settlement callback
+  -> ArchiveOS
+     -> ecosystem health
+     -> workforce bottleneck
+     -> cashflow / bankruptcy risk
+     -> approval / safe-mode control
+```
+
+| Service | Logistics 관점의 연결 | 주요 데이터 |
+| --- | --- | --- |
+| `Archive-Market` | 직접 호출하지 않고 Nexus payload metadata로 추적 | `orderId`, `customerType`, `productType`, `orderAmount`, `correlationId` |
+| `Archive-Nexus` | 물류 이벤트 입력 source, 일일 정산 callback 대상 | `LOGISTICS_DISPATCHED`, `URGENT_DELIVERY_REQUESTED`, `SHIPMENT_HOLD_RELEASED` |
+| `Archive-Logistics` | route/ETA/cost/workforce/outbox 책임 서비스 | `route_plan`, `route_cost`, `workday_result`, `logistics_outbox_event` |
+| `Archive-Ledger` | 비용 확정/정산/대사 이벤트 발행 대상 | `LOGISTICS_COST_CONFIRMED`, `DELAY_PENALTY_CONFIRMED`, `COLD_CHAIN_RISK_COST_CONFIRMED` |
+| `ArchiveOS` | 운영 관제와 safe-mode 판단 주체 | health, operations summary, workforce bottleneck, economy risk |
+
+```text
+Commercial Flow:
+Market order -> Nexus shipment -> Logistics delivery cost -> Ledger settlement -> OS control tower
+
+Operational Flow:
+OS/Market workforce allocation -> Logistics workday run -> capacity/backlog/productivity -> OS summary
+
+Financial Flow:
+Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconciliation -> Nexus compensation callback
+```
+
 ## 운영 API
 
 ### 상태/요약
