@@ -123,8 +123,13 @@ public class WorkforceService {
     @Transactional(readOnly = true)
     public WorkforceSummaryResponse workforceSummary() {
         WorkdayProductivityResult result = latestOrCalculated();
+        String degradedReason = result.backlogEvents() > 0 || result.shortageEvents() > 0
+                ? "Synthetic workforce capacity shortage or backlog detected."
+                : null;
         return new WorkforceSummaryResponse(
                 SERVICE,
+                SERVICE,
+                true,
                 result.workforceEnabled(),
                 result.baselineCapacity(),
                 result.workDate(),
@@ -146,6 +151,15 @@ public class WorkforceService {
                 result.backlogEvents(),
                 result.shortageEvents(),
                 result.syntheticLaborCost(),
+                result.dispatchers() + result.drivers() + result.delayResponders(),
+                result.capacityEvents(),
+                result.backlogEvents(),
+                result.shipmentsDelayed(),
+                result.bottleneckType(),
+                result.productivityRate(),
+                result.syntheticLaborCost(),
+                result.workDate().atStartOfDay(),
+                degradedReason,
                 result.status(),
                 result.bottleneckType()
         );

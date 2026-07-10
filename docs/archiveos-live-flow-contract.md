@@ -75,3 +75,15 @@ Archive-Logistics exposes the following event types for ArchiveOS:
 - Metadata exposes synthetic IDs and synthetic categories only.
 - `originCode` and `destinationCode` are not exposed as address-like runtime metadata; `originType` and `destinationType` are used instead.
 - Failed publish/callback state is exposed with `warning` or `critical` severity.
+## Workforce Overview Pull Contract
+
+ArchiveOS Workforce Overview reads the following Logistics APIs:
+
+```http
+GET /api/workforce/summary
+GET /api/productivity/summary
+GET /api/capacity/summary
+```
+
+These endpoints must return HTTP 200 even when no workforce allocation or workday result exists.
+They are read-only and do not create seed rows, simulations, workday results, or outbox publish attempts.

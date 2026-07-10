@@ -171,3 +171,30 @@ Use `oci-lite` profile and reduce:
 - retention period
 
 See [oci-lite-profile.md](oci-lite-profile.md).
+## If ArchiveOS Shows Logistics Workforce as Degraded
+
+Check the read-only workforce summary APIs:
+
+```powershell
+curl.exe http://localhost:8092/api/workforce/summary
+curl.exe http://localhost:8092/api/productivity/summary
+curl.exe http://localhost:8092/api/capacity/summary
+```
+
+Expected result:
+
+- HTTP 200 for all three APIs
+- no DB insert, seed, simulation, or outbox publish during GET calls
+- empty state returns default synthetic values
+- `available=true`
+- `bottleneckRole` is `NONE` or a synthetic bottleneck such as `DELIVERY_DRIVER` or `OUTBOX_PUBLISH_CAPACITY`
+
+If the response says `No static resource api/workforce/summary`, the running container is stale and does not include the workforce controller.
+Rebuild and restart Archive-Logistics:
+
+```powershell
+docker compose down
+docker compose up -d --build
+```
+
+Then repeat the three summary checks.

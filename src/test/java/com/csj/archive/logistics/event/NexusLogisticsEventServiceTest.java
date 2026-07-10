@@ -81,8 +81,14 @@ class NexusLogisticsEventServiceTest {
                 clock,
                 workforceService
         );
-        when(workforceService.workforceSummary()).thenReturn(new WorkforceSummaryResponse(
+        when(workforceService.workforceSummary()).thenReturn(workforceSummary());
+    }
+
+    private WorkforceSummaryResponse workforceSummary() {
+        return new WorkforceSummaryResponse(
                 "Archive-Logistics",
+                "Archive-Logistics",
+                true,
                 false,
                 true,
                 java.time.LocalDate.parse("2026-01-15"),
@@ -104,9 +110,18 @@ class NexusLogisticsEventServiceTest {
                 0L,
                 0L,
                 1_450_000L,
+                7,
+                302L,
+                0L,
+                0L,
+                "NONE",
+                java.math.BigDecimal.ZERO,
+                1_450_000L,
+                java.time.LocalDateTime.parse("2026-01-15T00:00:00"),
+                null,
                 "PRODUCTIVITY_REPORTED",
                 "NONE"
-        ));
+        );
     }
 
     @Test

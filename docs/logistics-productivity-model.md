@@ -40,3 +40,16 @@ workday run 시 다음 synthetic cost가 economy에 반영된다.
 - `DELIVERY_DELAY_OPERATION_COST_INCURRED`
 
 `ARCHIVE_ECONOMY_ENABLED=false`이면 비용 이벤트 저장은 비활성화되고, workforce summary 계산만 수행한다.
+## ArchiveOS summary behavior
+
+`GET /api/productivity/summary` is a read-only summary API.
+If there is no persisted workday result, Archive-Logistics calculates a transient default view from synthetic route/outbox counters and baseline capacity.
+The API does not save a workday result, seed default workforce rows, run simulation, or publish outbox events.
+
+Expected empty-state response characteristics:
+
+- HTTP 200
+- `processedEvents=0` when there is no workload
+- `productivityRate=0.0000` when effective capacity is zero
+- `status=PRODUCTIVITY_REPORTED`
+- no real employee, vehicle, address, or delivery data

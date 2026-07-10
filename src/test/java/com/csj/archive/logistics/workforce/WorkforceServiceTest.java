@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class WorkforceServiceTest {
@@ -45,9 +47,46 @@ class WorkforceServiceTest {
         assertThat(summary.workforceEnabled()).isFalse();
         assertThat(summary.baselineCapacity()).isTrue();
         assertThat(summary.capacityEvents()).isEqualTo(302L);
+        assertThat(summary.available()).isTrue();
+        assertThat(summary.totalHeadcount()).isEqualTo(7);
+        assertThat(summary.effectiveCapacity()).isEqualTo(302L);
+        assertThat(summary.backlogCount()).isZero();
+        assertThat(summary.bottleneckRole()).isEqualTo("OUTBOX_PUBLISH_CAPACITY");
         assertThat(summary.workloadEvents()).isEqualTo(17L);
         assertThat(summary.backlogEvents()).isZero();
         assertThat(summary.status()).isEqualTo("PRODUCTIVITY_REPORTED");
+        verify(productivityRepository, never()).save(any());
+        verify(economyService, never()).recordWorkforceCost(any(), any(), any(), any(), any(), any(), any(Long.class), any(), any());
+    }
+
+    @Test
+    void productivitySummaryWithNoPersistedWorkdayDoesNotInsert() {
+        WorkforceService service = service();
+        when(productivityRepository.findTopByOrderByWorkDateDescCreatedAtDesc()).thenReturn(Optional.empty());
+        when(routePlanRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+        when(routePlanRepository.countByDelayedTrueAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+        when(outboxRepository.countByStatusIn(any(Collection.class))).thenReturn(0L);
+
+        ProductivitySummaryResponse summary = service.productivitySummary();
+
+        assertThat(summary.processedEvents()).isZero();
+        assertThat(summary.status()).isEqualTo("PRODUCTIVITY_REPORTED");
+        verify(productivityRepository, never()).save(any());
+    }
+
+    @Test
+    void capacitySummaryWithNoPersistedWorkdayDoesNotInsert() {
+        WorkforceService service = service();
+        when(productivityRepository.findTopByOrderByWorkDateDescCreatedAtDesc()).thenReturn(Optional.empty());
+        when(routePlanRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+        when(routePlanRepository.countByDelayedTrueAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(0L);
+        when(outboxRepository.countByStatusIn(any(Collection.class))).thenReturn(0L);
+
+        CapacitySummaryResponse summary = service.capacitySummary();
+
+        assertThat(summary.workloadEvents()).isZero();
+        assertThat(summary.backlogEvents()).isZero();
+        verify(productivityRepository, never()).save(any());
     }
 
     @Test
