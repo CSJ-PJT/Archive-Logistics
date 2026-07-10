@@ -1,8 +1,15 @@
 package com.csj.archive.logistics.operations;
 
+import java.time.LocalDateTime;
+
 public record OperationsSummaryResponse(
         String service,
+        String serviceName,
+        String serviceRole,
         String status,
+        LocalDateTime latestEventAt,
+        String degradedReason,
+        boolean liveFlowAvailable,
         String profile,
         long receivedEvents,
         long processedEvents,

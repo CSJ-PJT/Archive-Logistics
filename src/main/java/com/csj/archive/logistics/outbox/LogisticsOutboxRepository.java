@@ -22,9 +22,14 @@ public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutbox
 
     List<LogisticsOutboxEntity> findByStatus(OutboxStatus status);
 
+    List<LogisticsOutboxEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
     long countByStatus(OutboxStatus status);
 
     long countByStatusIn(Collection<OutboxStatus> statuses);
+
+    @Query("select max(e.createdAt) from LogisticsOutboxEntity e")
+    LocalDateTime latestCreatedAt();
 
     @Query("""
             select e from LogisticsOutboxEntity e

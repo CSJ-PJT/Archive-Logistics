@@ -111,12 +111,28 @@ public class NexusEventEntity {
         return eventType;
     }
 
+    public String source() {
+        return source;
+    }
+
     public JsonNode payload() {
         return payload;
     }
 
     public NexusEventStatus status() {
         return status;
+    }
+
+    public LocalDateTime receivedAt() {
+        return receivedAt;
+    }
+
+    public LocalDateTime processedAt() {
+        return processedAt;
+    }
+
+    public LocalDateTime createdAt() {
+        return createdAt;
     }
 
     public String failureReason() {

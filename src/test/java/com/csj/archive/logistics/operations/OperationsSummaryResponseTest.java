@@ -1,0 +1,40 @@
+package com.csj.archive.logistics.operations;
+
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class OperationsSummaryResponseTest {
+    @Test
+    void operationsSummaryContainsLiveFlowFields() throws Exception {
+        OperationsSummaryResponse response = new OperationsSummaryResponse(
+                "Archive-Logistics",
+                "Archive-Logistics",
+                "Synthetic Logistics Event Backend",
+                "HEALTHY",
+                LocalDateTime.parse("2026-07-10T10:00:00"),
+                null,
+                true,
+                "local",
+                1,
+                1,
+                0,
+                0,
+                1,
+                new OperationsSummaryResponse.Economy(100, 50, 50, 1_000, "LOW"),
+                new OperationsSummaryResponse.Outbox(0, 1, 0, 0, 0),
+                new OperationsSummaryResponse.Risk(0, 0, 0, 0),
+                new OperationsSummaryResponse.MarketOrigin(1, 0, 0, 0),
+                new OperationsSummaryResponse.Workforce(false, true, 100, 10, 0, 0, "PRODUCTIVITY_REPORTED", "NONE"),
+                new OperationsSummaryResponse.Ledger(false, "DISABLED", "http://localhost:18080", "/api/events/logistics/bulk", "LOGISTICS_CONFIRMED_NATIVE"),
+                new OperationsSummaryResponse.Memory(512, 128)
+        );
+
+        assertThat(response.serviceName()).isEqualTo("Archive-Logistics");
+        assertThat(response.serviceRole()).isEqualTo("Synthetic Logistics Event Backend");
+        assertThat(response.liveFlowAvailable()).isTrue();
+        assertThat(response.latestEventAt()).isEqualTo(LocalDateTime.parse("2026-07-10T10:00:00"));
+    }
+}

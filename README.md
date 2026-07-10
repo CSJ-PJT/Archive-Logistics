@@ -115,6 +115,9 @@ Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconcilia
 - `GET /api/workforce/summary`
 - `GET /api/productivity/summary`
 - `GET /api/capacity/summary`
+- `GET /api/runtime-events/recent?limit=100`
+- `GET /api/runtime-events/correlation/{correlationId}`
+- `GET /api/runtime-events/entity/{entityId}`
 
 ### 이벤트 수신/시뮬레이션
 
@@ -241,6 +244,9 @@ curl.exe http://localhost:8092/api/logistics-economy/summary
 - [Logistics Workforce Model](./docs/logistics-workforce-model.md)
 - [Logistics Productivity Model](./docs/logistics-productivity-model.md)
 - [Workforce Event Contract](./docs/workforce-event-contract.md)
+- [ArchiveOS Live Flow Contract](./docs/archiveos-live-flow-contract.md)
+- [Runtime Event Contract](./docs/runtime-event-contract.md)
+- [Operations Summary Contract](./docs/operations-summary-contract.md)
 - [Game Economy Economics Notes](./docs/game-economy-logistics.md)
 - [Operations Runbook](./docs/operations-runbook.md)
 - [OCI Lite Profile](./docs/oci-lite-profile.md)

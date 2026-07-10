@@ -14,9 +14,15 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
 
     Optional<RoutePlanEntity> findBySourceEventId(String sourceEventId);
 
+    List<RoutePlanEntity> findByShipmentId(String shipmentId);
+
+    List<RoutePlanEntity> findByCorrelationId(String correlationId);
+
     List<RoutePlanEntity> findByFactoryId(String factoryId);
 
     Page<RoutePlanEntity> findByFactoryId(String factoryId, Pageable pageable);
+
+    List<RoutePlanEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     long countByDelayedTrue();
 
@@ -58,4 +64,7 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
             """)
     List<String> findDistinctFactoryIdsByCreatedAtBetween(@Param("start") java.time.LocalDateTime start,
                                                           @Param("end") java.time.LocalDateTime end);
+
+    @Query("select max(p.createdAt) from RoutePlanEntity p")
+    java.time.LocalDateTime latestCreatedAt();
 }

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -56,11 +58,18 @@ public class OperationsSummaryService {
         long outboxFailed = outboxRepository.countByStatus(OutboxStatus.FAILED);
         LogisticsEconomySummaryResponse economy = economyService.summary();
         WorkforceSummaryResponse workforce = workforceService.workforceSummary();
+        String status = failedEvents > 0 || outboxFailed > 0 || workforce.backlogEvents() > 0 ? "DEGRADED" : "HEALTHY";
+        String degradedReason = degradedReason(failedEvents, outboxFailed, workforce);
         Runtime runtime = Runtime.getRuntime();
         long usedHeap = runtime.totalMemory() - runtime.freeMemory();
         return new OperationsSummaryResponse(
                 "Archive-Logistics",
-                failedEvents > 0 || outboxFailed > 0 ? "DEGRADED" : "HEALTHY",
+                "Archive-Logistics",
+                "Synthetic Logistics Event Backend",
+                status,
+                latestEventAt(),
+                degradedReason,
+                true,
                 profile(),
                 nexusEventRepository.count(),
                 nexusEventRepository.countByStatus(NexusEventStatus.PROCESSED),
@@ -120,5 +129,29 @@ public class OperationsSummaryService {
     private String profile() {
         String[] activeProfiles = environment.getActiveProfiles();
         return activeProfiles.length == 0 ? "default" : String.join(",", Arrays.asList(activeProfiles));
+    }
+
+    private LocalDateTime latestEventAt() {
+        return Arrays.asList(
+                        nexusEventRepository.latestCreatedAt(),
+                        routePlanRepository.latestCreatedAt(),
+                        outboxRepository.latestCreatedAt()
+                ).stream()
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+    }
+
+    private String degradedReason(long failedEvents, long outboxFailed, WorkforceSummaryResponse workforce) {
+        if (failedEvents > 0) {
+            return "Nexus logistics event failures detected.";
+        }
+        if (outboxFailed > 0) {
+            return "Ledger outbox publish failures detected.";
+        }
+        if (workforce.backlogEvents() > 0) {
+            return "Synthetic workforce backlog detected.";
+        }
+        return null;
     }
 }
