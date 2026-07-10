@@ -24,6 +24,16 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
 
     long countByRequiresColdChainTrueAndDelayedTrue();
 
+    long countByOrderIdNotNull();
+
+    long countByExpressOrderTrue();
+
+    long countByCustomerType(String customerType);
+
+    @Query("select count(p) from RoutePlanEntity p where (p.customerType = :riskCustomerType) or (coalesce(p.riskLevel, 0) >= :riskLevelThreshold)")
+    long countByHighRiskCustomerOrRiskLevel(@Param("riskCustomerType") String riskCustomerType,
+                                           @Param("riskLevelThreshold") int riskLevelThreshold);
+
     List<RoutePlanEntity> findByFactoryIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             String factoryId, 
             java.time.LocalDateTime start,

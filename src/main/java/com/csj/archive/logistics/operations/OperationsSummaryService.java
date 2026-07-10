@@ -81,6 +81,12 @@ public class OperationsSummaryService {
                         routePlanRepository.countByDeviatedTrue(),
                         routePlanRepository.countByRequiresColdChainTrueAndDelayedTrue()
                 ),
+                new OperationsSummaryResponse.MarketOrigin(
+                        routePlanRepository.countByOrderIdNotNull(),
+                        routePlanRepository.countByExpressOrderTrue(),
+                        routePlanRepository.countByCustomerType("VIP_CUSTOMER"),
+                        routePlanRepository.countByHighRiskCustomerOrRiskLevel("HIGH_RISK_CUSTOMER", 4)
+                ),
                 new OperationsSummaryResponse.Ledger(
                         ledgerProperties.isEnabled(),
                         ledgerProperties.isEnabled() ? "ENABLED" : "DISABLED",

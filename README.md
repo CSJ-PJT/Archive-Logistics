@@ -16,6 +16,7 @@ Archive-Logistics는 Archive Platform Ecosystem에서 Nexus 출하 이벤트를 
 - Outbox 기반 이벤트 적재와 배치 발행
 - Ledger 이벤트 및 정산/비용 이벤트 발행
 - 운영/건강 상태 요약, 감사 로그 기록
+- Market-origin 메타데이터(orderId/customerType/expressOrder/riskLevel) 추적
 
 ## 운영 API
 
@@ -146,6 +147,7 @@ curl.exe http://localhost:8092/api/logistics-economy/summary
 - [Nexus Daily Settlement](./docs/nexus-daily-settlement.md)
 - [Logistics Economy Model](./docs/logistics-economy-model.md)
 - [Logistics Economy Daily Settlement](./docs/logistics-daily-settlement.md)
+- [Market Origin Metadata](./docs/market-origin-logistics-metadata.md)
 - [Game Economy Economics Notes](./docs/game-economy-logistics.md)
 - [Operations Runbook](./docs/operations-runbook.md)
 - [OCI Lite Profile](./docs/oci-lite-profile.md)

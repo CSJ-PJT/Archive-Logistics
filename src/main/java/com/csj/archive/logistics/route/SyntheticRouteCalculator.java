@@ -3,6 +3,7 @@ package com.csj.archive.logistics.route;
 import com.csj.archive.logistics.common.DeterministicHash;
 import com.csj.archive.logistics.common.IdGenerator;
 import com.csj.archive.logistics.event.NexusLogisticsEventRequest;
+import com.csj.archive.logistics.event.MarketShipmentMetadata;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -25,13 +26,21 @@ public class SyntheticRouteCalculator {
     }
 
     public RoutePlan calculate(NexusLogisticsEventRequest request) {
+        return calculate(request, MarketShipmentMetadata.fromPayload(request.payload()));
+    }
+
+    public RoutePlan calculate(NexusLogisticsEventRequest request, MarketShipmentMetadata metadata) {
         NexusLogisticsEventRequest.Payload payload = request.payload();
         BigDecimal distanceKm = distanceMatrix.distanceKm(payload.originCode(), payload.destinationCode())
                 .setScale(2, RoundingMode.UNNECESSARY);
         String priority = normalizePriority(payload.priority());
+        String marketPriority = metadata == null || metadata.marketPriority() == null
+                ? priority
+                : normalizePriority(metadata.marketPriority());
         int estimatedMinutes = estimatedMinutes(distanceKm, priority);
         BigDecimal riskScore = BigDecimal.valueOf(hash.zeroToOne(request.eventId() + ":" + request.idempotencyKey()))
                 .setScale(4, RoundingMode.HALF_UP);
+        riskScore = applyRiskLevelBoost(riskScore, metadata);
         boolean delayed = riskScore.compareTo(BigDecimal.valueOf(0.75)) >= 0;
         boolean deviated = riskScore.compareTo(BigDecimal.valueOf(0.90)) >= 0;
 
@@ -42,6 +51,9 @@ public class SyntheticRouteCalculator {
             case "CRITICAL" -> 70_000L;
             default -> 0L;
         };
+        if (urgentSurcharge == 0L && metadata != null && metadata.isExpressOrder()) {
+            urgentSurcharge = 30_000L;
+        }
         long delayPenalty = delayed ? 50_000L : 0L;
         long coldChainPenalty = payload.requiresColdChain() && delayed ? 80_000L : 0L;
         long totalCost = fuelCost + tollCost + urgentSurcharge + delayPenalty + coldChainPenalty;
@@ -61,6 +73,22 @@ public class SyntheticRouteCalculator {
                 payload.originCode(),
                 payload.destinationCode(),
                 vendorId,
+                metadata == null ? null : metadata.orderId(),
+                metadata == null ? null : metadata.customerId(),
+                metadata == null ? null : metadata.customerType(),
+                metadata == null ? null : metadata.productType(),
+                metadata == null ? null : metadata.orderAmount(),
+                metadata == null ? null : metadata.totalAmount(),
+                marketPriority,
+                metadata == null ? null : metadata.effectiveRiskLevel(),
+                metadata == null ? null : metadata.isExpressOrder(),
+                metadata == null ? null : metadata.isVipCustomer(),
+                metadata == null ? null : metadata.correlationId(),
+                metadata == null ? null : metadata.causationId(),
+                metadata == null ? null : metadata.simulationRunId(),
+                metadata == null ? null : metadata.settlementCycleId(),
+                metadata == null ? null : metadata.safeHopCount(),
+                metadata == null ? null : metadata.safeMaxHop(propertiesMaxHop()),
                 distanceKm,
                 estimatedMinutes,
                 priority,
@@ -72,6 +100,19 @@ public class SyntheticRouteCalculator {
                 new RouteCost(fuelCost, tollCost, urgentSurcharge, delayPenalty, coldChainPenalty, totalCost,
                         CURRENCY, requiresApproval, REASON)
         );
+    }
+
+    private BigDecimal applyRiskLevelBoost(BigDecimal riskScore, MarketShipmentMetadata metadata) {
+        if (metadata == null || !metadata.isHighRiskCustomer()) {
+            return riskScore;
+        }
+        return riskScore.add(BigDecimal.valueOf(0.20))
+                .min(BigDecimal.valueOf(0.9999))
+                .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private int propertiesMaxHop() {
+        return 5;
     }
 
     private int estimatedMinutes(BigDecimal distanceKm, String priority) {

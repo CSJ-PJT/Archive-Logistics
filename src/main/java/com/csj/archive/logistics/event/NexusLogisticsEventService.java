@@ -4,6 +4,7 @@ import com.csj.archive.logistics.audit.AuditAction;
 import com.csj.archive.logistics.audit.AuditLogService;
 import com.csj.archive.logistics.common.BusinessException;
 import com.csj.archive.logistics.common.IdGenerator;
+import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.ledger.LedgerContractMode;
 import com.csj.archive.logistics.ledger.LedgerPublishProperties;
 import com.csj.archive.logistics.outbox.LogisticsOutboxEntity;
@@ -14,7 +15,6 @@ import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlan;
 import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
-import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.route.SyntheticRouteCalculator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,19 +148,20 @@ public class NexusLogisticsEventService {
 
     private EventProcessingResult processNewInTransaction(NexusLogisticsEventRequest request) {
         LocalDateTime now = LocalDateTime.now(clock);
-        NexusEventEntity event = nexusEventRepository.save(new NexusEventEntity(
-                request.eventId(),
-                request.idempotencyKey(),
-                request.source(),
-                request.eventType(),
-                objectMapper.valueToTree(request.payload()),
-                now
-        ));
-        auditLogService.record(AuditAction.NEXUS_EVENT_RECEIVED, "nexus_logistics_event", event.eventId(),
-                null, NexusEventStatus.RECEIVED.name(), Map.of("eventType", request.eventType()));
+            NexusEventEntity event = nexusEventRepository.save(new NexusEventEntity(
+                    request.eventId(),
+                    request.idempotencyKey(),
+                    request.source(),
+                    request.eventType(),
+                    objectMapper.valueToTree(request.payload()),
+                    now
+            ));
+            auditLogService.record(AuditAction.NEXUS_EVENT_RECEIVED, "nexus_logistics_event", event.eventId(),
+                    null, NexusEventStatus.RECEIVED.name(), Map.of("eventType", request.eventType()));
 
         try {
-            RoutePlan routePlan = routeCalculator.calculate(request);
+            MarketShipmentMetadata metadata = MarketShipmentMetadata.fromPayload(request.payload());
+            RoutePlan routePlan = routeCalculator.calculate(request, metadata);
             routePlanRepository.save(new RoutePlanEntity(routePlan, now));
             RouteCostEntity routeCost = routeCostRepository.save(new RouteCostEntity(routePlan.routePlanId(), routePlan.cost(), now));
             var economy = economyService.createRouteEconomyEvents(
@@ -168,8 +169,8 @@ public class NexusLogisticsEventService {
                     routeCost,
                     request.eventId(),
                     request.eventId(),
-                    null,
-                    null
+                    metadata.simulationRunId(),
+                    metadata.settlementCycleId()
             );
 
             String ledgerEventType = ledgerProperties.getContractMode() == LedgerContractMode.ARCHIVE_LEDGER_V1_COMPAT
@@ -185,7 +186,7 @@ public class NexusLogisticsEventService {
                             ledgerEventType,
                             "ROUTE_PLAN",
                             routePlan.routePlanId(),
-                            ledgerPayload(routePlan, routeCost, economy, request.eventId(), request.eventId())
+                            ledgerPayload(routePlan, routeCost, economy, request.eventId(), request.eventId(), metadata)
                     ),
                     now
             ));
@@ -251,13 +252,26 @@ public class NexusLogisticsEventService {
     }
 
     private JsonNode ledgerPayload(RoutePlan routePlan, RouteCostEntity routeCost, LogisticsEconomyService.RouteEconomyResult economy,
-                                   String correlationId, String causationId) {
+                                   String correlationId, String causationId, MarketShipmentMetadata metadata) {
+        String safeCorrelationId = metadata == null || metadata.correlationId() == null ? correlationId : metadata.correlationId();
+        String safeCausationId = metadata == null || metadata.causationId() == null ? causationId : metadata.causationId();
+        String sourceChain = "Archive-Market -> Archive-Nexus -> Archive-Logitics";
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sourceService", "Archive-Logistics");
         payload.put("billedToService", "Archive-Nexus");
         payload.put("logisticsRevenue", economy.totalRevenue());
         payload.put("logisticsCost", economy.totalCost());
         payload.put("logisticsProfit", economy.netProfit());
+        payload.put("sourceChain", sourceChain);
+        payload.put("orderId", routePlan.orderId());
+        payload.put("customerId", routePlan.customerId());
+        payload.put("customerType", routePlan.customerType());
+        payload.put("productType", routePlan.productType());
+        payload.put("orderAmount", routePlan.orderAmount());
+        payload.put("totalAmount", routePlan.totalAmount());
+        payload.put("marketPriority", routePlan.marketPriority());
+        payload.put("riskLevel", routePlan.riskLevel());
+        payload.put("expressOrder", routePlan.expressOrder());
         payload.put("factoryId", routePlan.factoryId());
         payload.put("shipmentId", routePlan.shipmentId());
         payload.put("vendorId", routePlan.vendorId());
@@ -282,12 +296,14 @@ public class NexusLogisticsEventService {
         payload.put("deviated", routePlan.deviated());
         payload.put("priority", routePlan.priority());
         payload.put("requiresColdChain", routePlan.requiresColdChain());
-        payload.put("simulationRunId", null);
-        payload.put("settlementCycleId", null);
-        payload.put("correlationId", correlationId);
-        payload.put("causationId", causationId);
-        payload.put("hopCount", 0);
-        payload.put("maxHop", economyService.maxHop());
+        payload.put("simulationRunId", routePlan.simulationRunId());
+        payload.put("settlementCycleId", routePlan.settlementCycleId());
+        payload.put("correlationId", safeCorrelationId);
+        payload.put("causationId", safeCausationId);
+        int maxHop = routePlan.maxHop() == null ? economyService.maxHop() : Math.max(1, routePlan.maxHop());
+        int hopCount = (routePlan.hopCount() == null ? 0 : routePlan.hopCount()) + 1;
+        payload.put("hopCount", hopCount);
+        payload.put("maxHop", maxHop);
         payload.put("routeStatus", routePlan.routeStatus());
         payload.put("source", SOURCE);
         return objectMapper.valueToTree(payload);

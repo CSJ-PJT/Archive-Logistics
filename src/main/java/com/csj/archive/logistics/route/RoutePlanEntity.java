@@ -38,6 +38,54 @@ public class RoutePlanEntity {
     @Column(name = "vendor_id", nullable = false, length = 100)
     private String vendorId;
 
+    @Column(name = "order_id", length = 100)
+    private String orderId;
+
+    @Column(name = "customer_id", length = 100)
+    private String customerId;
+
+    @Column(name = "customer_type", length = 100)
+    private String customerType;
+
+    @Column(name = "product_type", length = 100)
+    private String productType;
+
+    @Column(name = "order_amount")
+    private Long orderAmount;
+
+    @Column(name = "total_amount")
+    private Long totalAmount;
+
+    @Column(name = "market_priority", length = 30)
+    private String marketPriority;
+
+    @Column(name = "risk_level")
+    private Integer riskLevel;
+
+    @Column(name = "express_order")
+    private Boolean expressOrder;
+
+    @Column(name = "vip_customer")
+    private Boolean vipCustomer;
+
+    @Column(name = "correlation_id", length = 100)
+    private String correlationId;
+
+    @Column(name = "causation_id", length = 100)
+    private String causationId;
+
+    @Column(name = "simulation_run_id", length = 100)
+    private String simulationRunId;
+
+    @Column(name = "settlement_cycle_id", length = 100)
+    private String settlementCycleId;
+
+    @Column(name = "hop_count")
+    private Integer hopCount;
+
+    @Column(name = "max_hop")
+    private Integer maxHop;
+
     @Column(name = "distance_km", nullable = false, precision = 10, scale = 2)
     private BigDecimal distanceKm;
 
@@ -79,6 +127,22 @@ public class RoutePlanEntity {
         this.originCode = routePlan.originCode();
         this.destinationCode = routePlan.destinationCode();
         this.vendorId = routePlan.vendorId();
+        this.orderId = routePlan.orderId();
+        this.customerId = routePlan.customerId();
+        this.customerType = routePlan.customerType();
+        this.productType = routePlan.productType();
+        this.orderAmount = routePlan.orderAmount();
+        this.totalAmount = routePlan.totalAmount();
+        this.marketPriority = routePlan.marketPriority();
+        this.riskLevel = routePlan.riskLevel();
+        this.expressOrder = routePlan.expressOrder();
+        this.vipCustomer = routePlan.requiresVipCustomer();
+        this.correlationId = routePlan.correlationId();
+        this.causationId = routePlan.causationId();
+        this.simulationRunId = routePlan.simulationRunId();
+        this.settlementCycleId = routePlan.settlementCycleId();
+        this.hopCount = routePlan.hopCount();
+        this.maxHop = routePlan.maxHop();
         this.distanceKm = routePlan.distanceKm();
         this.estimatedMinutes = routePlan.estimatedMinutes();
         this.priority = routePlan.priority();
@@ -121,6 +185,70 @@ public class RoutePlanEntity {
 
     public String vendorId() {
         return vendorId;
+    }
+
+    public String orderId() {
+        return orderId;
+    }
+
+    public String customerId() {
+        return customerId;
+    }
+
+    public String customerType() {
+        return customerType;
+    }
+
+    public String productType() {
+        return productType;
+    }
+
+    public Long orderAmount() {
+        return orderAmount;
+    }
+
+    public Long totalAmount() {
+        return totalAmount;
+    }
+
+    public String marketPriority() {
+        return marketPriority;
+    }
+
+    public Integer riskLevel() {
+        return riskLevel;
+    }
+
+    public Boolean expressOrder() {
+        return expressOrder;
+    }
+
+    public Boolean vipCustomer() {
+        return vipCustomer;
+    }
+
+    public String correlationId() {
+        return correlationId;
+    }
+
+    public String causationId() {
+        return causationId;
+    }
+
+    public String simulationRunId() {
+        return simulationRunId;
+    }
+
+    public String settlementCycleId() {
+        return settlementCycleId;
+    }
+
+    public Integer hopCount() {
+        return hopCount;
+    }
+
+    public Integer maxHop() {
+        return maxHop;
     }
 
     public BigDecimal distanceKm() {

@@ -44,10 +44,40 @@ public record NexusLogisticsEventRequest(
             @NotBlank String priority,
             @NotBlank String itemType,
             @Min(1) int quantity,
-            boolean requiresColdChain
+            boolean requiresColdChain,
+            String orderId,
+            String customerId,
+            String customerType,
+            String productType,
+            Long orderAmount,
+            Long totalAmount,
+            Integer riskLevel,
+            Boolean expressOrder,
+            String riskTag,
+            Boolean vipCustomer,
+            String simulationRunId,
+            String settlementCycleId,
+            String correlationId,
+            String causationId,
+            Integer hopCount,
+            Integer maxHop,
+            String marketPriority
     ) {
         public String normalizedPriority() {
             return priority == null ? "NORMAL" : priority.toUpperCase();
+        }
+
+        public Payload(String factoryId,
+                       String shipmentId,
+                       String originCode,
+                       String destinationCode,
+                       String priority,
+                       String itemType,
+                       int quantity,
+                       boolean requiresColdChain) {
+            this(factoryId, shipmentId, originCode, destinationCode, priority, itemType, quantity, requiresColdChain,
+                    null, null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null);
         }
     }
 }

@@ -30,6 +30,26 @@ Required payload fields:
 - `quantity`
 - `requiresColdChain`
 
+Optional Market metadata fields:
+
+- `orderId`
+- `customerId`
+- `customerType`
+- `productType`
+- `orderAmount`
+- `totalAmount`
+- `riskLevel`
+- `expressOrder`
+- `riskTag`
+- `vipCustomer`
+- `simulationRunId`
+- `settlementCycleId`
+- `correlationId`
+- `causationId`
+- `hopCount`
+- `maxHop`
+- `marketPriority`
+
 ## Ledger Output Events
 
 Archive-Logistics creates Ledger-compatible logistics cost events through the outbox.
@@ -59,9 +79,25 @@ Content-Type: application/json
         "shipmentId": "SHIP-000123",
         "factoryId": "FAC-A",
         "vendorId": "VENDOR-LOGISTICS-01",
+        "orderId": "ORD-2026-0001",
+        "customerId": "CUST-0001",
+        "customerType": "VIP_CUSTOMER",
+        "productType": "battery-module",
+        "orderAmount": 1500,
+        "totalAmount": 1800,
         "totalCost": 93420,
         "currency": "KRW",
-        "requiresApproval": false
+        "requiresApproval": false,
+        "sourceChain": "Archive-Market -> Archive-Nexus -> Archive-Logitics",
+        "riskLevel": 1,
+        "marketPriority": "HIGH",
+        "expressOrder": false,
+        "simulationRunId": "SIM-20260710-001",
+        "settlementCycleId": "CYCLE-20260710",
+        "correlationId": "CORR-001",
+        "causationId": "CAUSE-001",
+        "hopCount": 1,
+        "maxHop": 5
       }
     }
   ]
@@ -154,3 +190,12 @@ Duplicate policy:
 ## Data Policy
 
 Events use synthetic factory, destination, route, and vendor codes only. Real addresses, real drivers, real vehicles, real carriers, payment cards, accounts, user locations, and personal data are not generated or stored.
+
+## Market Origin Metadata Traceability
+
+`Archive-Logistics`는 `Archive-Market`와 직접 연동하지 않고,
+`Archive-Nexus` 경유로 전달된 주문/고객/정산 메타데이터를 보존합니다.
+
+추가 문서:
+
+- [Market Origin Metadata](./market-origin-logistics-metadata.md)

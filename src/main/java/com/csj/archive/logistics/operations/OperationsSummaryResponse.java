@@ -12,6 +12,7 @@ public record OperationsSummaryResponse(
         Economy economy,
         Outbox outbox,
         Risk risk,
+        MarketOrigin marketOrigin,
         Ledger ledger,
         Memory memory
 ) {
@@ -21,6 +22,13 @@ public record OperationsSummaryResponse(
     }
 
     public record Risk(long approvalRequired, long delayedRoutes, long deviatedRoutes, long coldChainRisk) {
+    }
+    public record MarketOrigin(
+            long marketOriginRoutes,
+            long expressOrderRoutes,
+            long vipCustomerRoutes,
+            long highRiskCustomerRoutes
+    ) {
     }
 
     public record Ledger(boolean enabled, String status, String baseUrl, String bulkEndpoint, String contractMode) {
