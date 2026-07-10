@@ -35,3 +35,10 @@ archive:
       fixed-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_FIXED_DELAY_MS:300000}
       initial-delay-ms: ${ARCHIVE_NEXUS_SETTLEMENT_SCHEDULER_INITIAL_DELAY_MS:45000}
       date-offset-days: ${ARCHIVE_NEXUS_SETTLEMENT_DATE_OFFSET_DAYS:0}
+  runtime:
+    autorun:
+      enabled: ${ARCHIVE_RUNTIME_AUTORUN_ENABLED:true}
+    tick-interval: ${ARCHIVE_RUNTIME_TICK_INTERVAL:30s}
+    initial-delay: ${ARCHIVE_RUNTIME_INITIAL_DELAY:15s}
+    max-events-per-tick: ${ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK:10}
+    max-backlog-per-tick: ${ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK:50}

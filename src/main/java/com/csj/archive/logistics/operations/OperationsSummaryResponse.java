@@ -27,6 +27,7 @@ public record OperationsSummaryResponse(
         Risk risk,
         MarketOrigin marketOrigin,
         Workforce workforce,
+        Runtime runtime,
         Ledger ledger,
         Memory memory
 ) {
@@ -57,6 +58,19 @@ public record OperationsSummaryResponse(
             String bottleneckRole,
             String status,
             String bottleneckType
+    ) {
+    }
+
+    public record Runtime(
+            boolean runtimeActive,
+            boolean autoRunEnabled,
+            String schedulerStatus,
+            LocalDateTime lastWorkAt,
+            LocalDateTime lastEventAt,
+            int eventsProducedLastTick,
+            int eventsConsumedLastTick,
+            long backlogCount,
+            String pipelineStatus
     ) {
     }
 

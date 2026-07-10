@@ -87,3 +87,11 @@ archive:
     driver-daily-cost: ${ARCHIVE_WORKFORCE_DRIVER_DAILY_COST:220000}
     delay-responder-daily-cost: ${ARCHIVE_WORKFORCE_DELAY_RESPONDER_DAILY_COST:200000}
     max-hop: ${ARCHIVE_WORKFORCE_MAX_HOP:5}
+  runtime:
+    autorun:
+      enabled: ${ARCHIVE_RUNTIME_AUTORUN_ENABLED:false}
+    tick-interval: ${ARCHIVE_RUNTIME_TICK_INTERVAL:30s}
+    initial-delay: ${ARCHIVE_RUNTIME_INITIAL_DELAY:15s}
+    max-events-per-tick: ${ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK:10}
+    max-backlog-per-tick: ${ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK:50}
+    max-hop: ${ARCHIVE_RUNTIME_MAX_HOP:5}

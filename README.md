@@ -118,6 +118,7 @@ Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconcilia
 - `GET /api/runtime-events/recent?limit=100`
 - `GET /api/runtime-events/correlation/{correlationId}`
 - `GET /api/runtime-events/entity/{entityId}`
+- `GET /api/runtime/status`
 
 ### 이벤트 수신/시뮬레이션
 
@@ -191,6 +192,29 @@ ArchiveOS는 Archive-Logistics의 배송 흐름을 read-only runtime event proje
 세부 계약은 `docs/archiveos-live-flow-contract.md`,
 `docs/logistics-runtime-event-contract.md`,
 `docs/logistics-delay-capacity-contract.md`를 기준으로 합니다.
+
+## Autonomous Runtime Work Loop
+
+local/demo 환경에서는 `archive.runtime.autorun.enabled=true`로 제한된 synthetic runtime work loop를 실행할 수 있습니다.
+기본 tick 간격은 `30s`이고 tick당 최대 `10`건의 Nexus-origin synthetic shipment event만 생성합니다.
+outbox backlog가 `archive.runtime.max-backlog-per-tick` 이상이면 신규 shipment 생성을 멈추고 workday/capacity tick만 갱신합니다.
+
+상태 확인:
+
+```http
+GET /api/runtime/status
+```
+
+주요 설정:
+
+- `ARCHIVE_RUNTIME_AUTORUN_ENABLED`
+- `ARCHIVE_RUNTIME_TICK_INTERVAL`
+- `ARCHIVE_RUNTIME_INITIAL_DELAY`
+- `ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK`
+- `ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK`
+
+GET summary API는 계속 read-only입니다. 자동 루프의 write는 scheduler tick에서만 수행되고,
+eventId/idempotencyKey/correlationId/hop guard와 per-tick limit으로 이벤트 폭증을 막습니다.
 
 ## Internationalization
 

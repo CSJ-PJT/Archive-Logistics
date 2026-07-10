@@ -11,6 +11,13 @@ spring:
           batch_size: 20
 
 archive:
+  runtime:
+    autorun:
+      enabled: ${ARCHIVE_RUNTIME_AUTORUN_ENABLED:false}
+    tick-interval: ${ARCHIVE_RUNTIME_TICK_INTERVAL:60s}
+    initial-delay: ${ARCHIVE_RUNTIME_INITIAL_DELAY:30s}
+    max-events-per-tick: ${ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK:2}
+    max-backlog-per-tick: ${ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK:10}
   outbox:
     chunk-size: ${ARCHIVE_OUTBOX_CHUNK_SIZE:20}
     scheduler:

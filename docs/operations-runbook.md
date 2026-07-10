@@ -198,3 +198,33 @@ docker compose up -d --build
 ```
 
 Then repeat the three summary checks.
+
+## If Live Flow Looks Stalled
+
+Check the autonomous runtime loop:
+
+```powershell
+curl.exe http://localhost:8092/api/runtime/status
+curl.exe http://localhost:8092/api/runtime-events/recent?limit=20
+curl.exe http://localhost:8092/api/operations/summary
+curl.exe http://localhost:8092/api/outbox/summary
+```
+
+Expected local/demo behavior:
+
+- `autoRunEnabled=true`
+- `schedulerStatus=RUNNING` or `BACKLOG_LIMITED`
+- `lastWorkAt` changes after the configured tick interval
+- recent runtime events include route/cost/outbox/workday projections
+
+Safety settings:
+
+```env
+ARCHIVE_RUNTIME_AUTORUN_ENABLED=true
+ARCHIVE_RUNTIME_TICK_INTERVAL=30s
+ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK=10
+ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK=50
+```
+
+If `schedulerStatus=BACKLOG_LIMITED`, clear or publish outbox backlog before increasing event production.
+Do not raise `ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK` in low-memory or shared demo environments unless ArchiveOS needs a higher visible event rate.

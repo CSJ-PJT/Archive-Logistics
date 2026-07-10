@@ -10,6 +10,8 @@ import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.economy.LogisticsEconomySummaryResponse;
+import com.csj.archive.logistics.runtime.RuntimeStatusResponse;
+import com.csj.archive.logistics.runtime.RuntimeWorkLoop;
 import com.csj.archive.logistics.workforce.WorkforceService;
 import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
 import org.springframework.core.env.Environment;
@@ -31,6 +33,7 @@ public class OperationsSummaryService {
     private final AuditLogService auditLogService;
     private final LedgerPublishProperties ledgerProperties;
     private final WorkforceService workforceService;
+    private final RuntimeWorkLoop runtimeWorkLoop;
     private final Environment environment;
 
     public OperationsSummaryService(NexusEventRepository nexusEventRepository,
@@ -41,6 +44,7 @@ public class OperationsSummaryService {
                                     AuditLogService auditLogService,
                                     LedgerPublishProperties ledgerProperties,
                                     WorkforceService workforceService,
+                                    RuntimeWorkLoop runtimeWorkLoop,
                                     Environment environment) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
@@ -50,6 +54,7 @@ public class OperationsSummaryService {
         this.auditLogService = auditLogService;
         this.ledgerProperties = ledgerProperties;
         this.workforceService = workforceService;
+        this.runtimeWorkLoop = runtimeWorkLoop;
         this.environment = environment;
     }
 
@@ -58,6 +63,7 @@ public class OperationsSummaryService {
         long outboxFailed = outboxRepository.countByStatus(OutboxStatus.FAILED);
         LogisticsEconomySummaryResponse economy = economyService.summary();
         WorkforceSummaryResponse workforce = workforceService.workforceSummary();
+        RuntimeStatusResponse runtimeStatus = runtimeWorkLoop.status();
         String status = failedEvents > 0 || outboxFailed > 0 || workforce.backlogEvents() > 0 ? "DEGRADED" : "HEALTHY";
         String degradedReason = degradedReason(failedEvents, outboxFailed, workforce);
         Runtime runtime = Runtime.getRuntime();
@@ -120,6 +126,17 @@ public class OperationsSummaryService {
                         workforce.bottleneckType(),
                         workforce.status(),
                         workforce.bottleneckType()
+                ),
+                new OperationsSummaryResponse.Runtime(
+                        runtimeStatus.runtimeActive(),
+                        runtimeStatus.autoRunEnabled(),
+                        runtimeStatus.schedulerStatus(),
+                        runtimeStatus.lastWorkAt(),
+                        runtimeStatus.lastEventAt(),
+                        runtimeStatus.eventsProducedLastTick(),
+                        runtimeStatus.eventsConsumedLastTick(),
+                        runtimeStatus.backlogCount(),
+                        runtimeStatus.pipelineStatus()
                 ),
                 new OperationsSummaryResponse.Ledger(
                         ledgerProperties.isEnabled(),
