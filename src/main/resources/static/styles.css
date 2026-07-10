@@ -72,6 +72,29 @@ h1 {
   justify-content: flex-end;
 }
 
+.language-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 10px;
+  color: var(--muted);
+}
+
+.language-selector select {
+  width: 96px;
+  height: 30px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
 button,
 select,
 input {
@@ -386,5 +409,15 @@ dd {
   .filter {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .language-selector {
+    max-width: 46px;
+    overflow: hidden;
+  }
+
+  .language-selector select {
+    width: 18px;
+    color: transparent;
   }
 }

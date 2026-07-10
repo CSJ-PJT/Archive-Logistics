@@ -6,6 +6,22 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const languages = ["ko", "en", "ja", "zh"];
+
+function initLanguageSelector() {
+  const selector = $("languageSelector");
+  if (!selector) return;
+  const saved = localStorage.getItem("archive-logistics-language");
+  const language = languages.includes(saved) ? saved : "ko";
+  selector.value = language;
+  document.documentElement.lang = language;
+  document.documentElement.dataset.language = language;
+  selector.addEventListener("change", () => {
+    localStorage.setItem("archive-logistics-language", selector.value);
+    document.documentElement.lang = selector.value;
+    document.documentElement.dataset.language = selector.value;
+  });
+}
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("ko-KR");
@@ -228,6 +244,7 @@ async function runNexusSettlement() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initLanguageSelector();
   $("refreshButton").addEventListener("click", refresh);
   $("simulateButton").addEventListener("click", simulate);
   $("publishButton").addEventListener("click", publishOutbox);
