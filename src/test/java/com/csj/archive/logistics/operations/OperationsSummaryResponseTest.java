@@ -30,6 +30,12 @@ class OperationsSummaryResponseTest {
                 10,
                 1,
                 new OperationsSummaryResponse.Economy(100, 50, 50, 1_000, "LOW"),
+                new com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse(
+                        100, 10, 5, 20, 0, 0, 0, 50,
+                        java.math.BigDecimal.valueOf(0.5), 1_000, 10, 8, 2, 8, 1,
+                        java.math.BigDecimal.valueOf(0.6), "NONE", java.math.BigDecimal.valueOf(60),
+                        java.math.BigDecimal.valueOf(0.2), 0
+                ),
                 new OperationsSummaryResponse.Outbox(0, 1, 0, 0, 0),
                 new OperationsSummaryResponse.Risk(0, 0, 0, 0),
                 new OperationsSummaryResponse.MarketOrigin(1, 0, 0, 0),
@@ -49,5 +55,6 @@ class OperationsSummaryResponseTest {
         assertThat(response.shipmentsRequested()).isEqualTo(10);
         assertThat(response.workforce().driverCapacity()).isEqualTo(8);
         assertThat(response.runtime().schedulerStatus()).isEqualTo("RUNNING");
+        assertThat(response.balance().operatingMargin()).isEqualByComparingTo("0.5");
     }
 }

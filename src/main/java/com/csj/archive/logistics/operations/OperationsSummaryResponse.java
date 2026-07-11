@@ -1,6 +1,7 @@
 package com.csj.archive.logistics.operations;
 
 import java.time.LocalDateTime;
+import com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse;
 
 public record OperationsSummaryResponse(
         String service,
@@ -23,6 +24,7 @@ public record OperationsSummaryResponse(
         long routePlansCreated,
         long backlogCount,
         Economy economy,
+        LogisticsBalanceSummaryResponse balance,
         Outbox outbox,
         Risk risk,
         MarketOrigin marketOrigin,

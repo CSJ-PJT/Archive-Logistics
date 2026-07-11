@@ -122,7 +122,11 @@ public class WorkforceService {
 
     @Transactional(readOnly = true)
     public WorkforceSummaryResponse workforceSummary() {
-        WorkdayProductivityResult result = latestOrCalculated();
+        Optional<WorkdayProductivityResult> latest = latestPersisted();
+        if (latest.isEmpty()) {
+            return noDataWorkforceSummary();
+        }
+        WorkdayProductivityResult result = latest.get();
         String degradedReason = result.backlogEvents() > 0 || result.shortageEvents() > 0
                 ? "Synthetic workforce capacity shortage or backlog detected."
                 : null;
@@ -167,7 +171,14 @@ public class WorkforceService {
 
     @Transactional(readOnly = true)
     public ProductivitySummaryResponse productivitySummary() {
-        WorkdayProductivityResult result = latestOrCalculated();
+        Optional<WorkdayProductivityResult> latest = latestPersisted();
+        if (latest.isEmpty()) {
+            return new ProductivitySummaryResponse(
+                    SERVICE, null, 0L, 0L, BigDecimal.ZERO, BigDecimal.ZERO, 0L,
+                    "NO_DATA", false, "No persisted synthetic workforce workday result is available."
+            );
+        }
+        WorkdayProductivityResult result = latest.get();
         return new ProductivitySummaryResponse(
                 SERVICE,
                 result.workDate(),
@@ -176,13 +187,23 @@ public class WorkforceService {
                 result.productivityRate(),
                 result.utilizationRate(),
                 result.delayedResponseLoad(),
-                result.status()
+                result.status(),
+                true,
+                null
         );
     }
 
     @Transactional(readOnly = true)
     public CapacitySummaryResponse capacitySummary() {
-        WorkdayProductivityResult result = latestOrCalculated();
+        Optional<WorkdayProductivityResult> latest = latestPersisted();
+        if (latest.isEmpty()) {
+            return new CapacitySummaryResponse(
+                    SERVICE, null, properties.isEnabled(), false, 0L, 0L, 0L,
+                    0L, 0L, 0L, "NONE", "NO_DATA", false,
+                    "No persisted synthetic workforce workday result is available."
+            );
+        }
+        WorkdayProductivityResult result = latest.get();
         return new CapacitySummaryResponse(
                 SERVICE,
                 result.workDate(),
@@ -194,14 +215,31 @@ public class WorkforceService {
                 result.workloadEvents(),
                 result.backlogEvents(),
                 result.shortageEvents(),
-                result.bottleneckType()
+                result.bottleneckType(),
+                result.status(),
+                true,
+                null
         );
     }
 
     public WorkdayProductivityResult latestOrCalculated() {
+        return latestPersisted().orElseGet(() -> calculate(LocalDate.now(clock)));
+    }
+
+    private Optional<WorkdayProductivityResult> latestPersisted() {
         return productivityRepository.findTopByOrderByWorkDateDescCreatedAtDesc()
-                .map(WorkdayProductivityResult::from)
-                .orElseGet(() -> calculate(LocalDate.now(clock)));
+                .map(WorkdayProductivityResult::from);
+    }
+
+    private WorkforceSummaryResponse noDataWorkforceSummary() {
+        String reason = "No persisted synthetic workforce workday result is available.";
+        return new WorkforceSummaryResponse(
+                SERVICE, SERVICE, false, properties.isEnabled(), false,
+                null, null, null, 0, 0, 0,
+                0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L,
+                0L, 0L, 0L, 0, 0L, 0L, 0L, "NONE", BigDecimal.ZERO,
+                0L, null, reason, "NO_DATA", "NONE"
+        );
     }
 
     private WorkdayProductivityResult calculate(LocalDate workDate) {

@@ -260,7 +260,7 @@ public class NexusLogisticsEventService {
                                    String correlationId, String causationId, MarketShipmentMetadata metadata) {
         String safeCorrelationId = metadata == null || metadata.correlationId() == null ? correlationId : metadata.correlationId();
         String safeCausationId = metadata == null || metadata.causationId() == null ? causationId : metadata.causationId();
-        String sourceChain = "Archive-Market -> Archive-Nexus -> Archive-Logitics";
+        String sourceChain = "Archive-Market -> Archive-Nexus -> Archive-Logistics";
         WorkforceSummaryResponse workforce = workforceService.workforceSummary();
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sourceService", "Archive-Logistics");
@@ -298,6 +298,8 @@ public class NexusLogisticsEventService {
         payload.put("routePlanId", routePlan.routePlanId());
         payload.put("originCode", routePlan.originCode());
         payload.put("destinationCode", routePlan.destinationCode());
+        payload.put("destinationType", routePlan.destinationCode().startsWith("DC-") ? "DISTRIBUTION_CENTER" : "SYNTHETIC_HUB");
+        payload.put("syntheticHubId", routePlan.destinationCode());
         payload.put("distanceKm", routePlan.distanceKm());
         payload.put("estimatedMinutes", routePlan.estimatedMinutes());
         payload.put("fuelCost", routePlan.cost().fuelCost());

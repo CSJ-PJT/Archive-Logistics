@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.List;
 
 public interface LogisticsProfitSnapshotRepository extends JpaRepository<LogisticsProfitSnapshotEntity, String> {
     Optional<LogisticsProfitSnapshotEntity> findTopByOrderBySettlementDateDesc();
@@ -14,5 +15,6 @@ public interface LogisticsProfitSnapshotRepository extends JpaRepository<Logisti
     Optional<LogisticsProfitSnapshotEntity> findTopByOrderByCreatedAtDesc();
 
     Page<LogisticsProfitSnapshotEntity> findBySettlementDate(LocalDate settlementDate, Pageable pageable);
-}
 
+    List<LogisticsProfitSnapshotEntity> findTop30ByOrderByCreatedAtDesc();
+}

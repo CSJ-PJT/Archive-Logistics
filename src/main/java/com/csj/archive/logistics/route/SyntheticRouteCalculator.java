@@ -96,7 +96,7 @@ public class SyntheticRouteCalculator {
                 delayed,
                 deviated,
                 payload.requiresColdChain(),
-                "COST_CONFIRMED",
+                "ROUTE_ASSIGNED",
                 new RouteCost(fuelCost, tollCost, urgentSurcharge, delayPenalty, coldChainPenalty, totalCost,
                         CURRENCY, requiresApproval, REASON)
         );

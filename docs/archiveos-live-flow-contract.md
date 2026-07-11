@@ -20,6 +20,7 @@ It does not create fake animation-only trucks, tokens, addresses, or personal da
 
 ```http
 GET /api/runtime-events/recent?limit=100
+GET /api/runtime-events/recent?after={cursor}&limit=100
 GET /api/runtime-events/correlation/{correlationId}
 GET /api/runtime-events/entity/{entityId}
 GET /api/runtime/status
@@ -112,3 +113,5 @@ Fields:
 
 The loop is bounded by `archive.runtime.max-events-per-tick` and `archive.runtime.max-backlog-per-tick`.
 It creates only Synthetic Runtime Data and does not bypass Ledger/Nexus integration enabled flags.
+
+Runtime Mesh V1 details, including cursor ordering and no-data semantics, are documented in `docs/archive-runtime-mesh-contract.md`.

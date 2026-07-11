@@ -35,7 +35,7 @@ class WorkforceServiceTest {
     private final IdGenerator idGenerator = new IdGenerator(clock, new DeterministicHash());
 
     @Test
-    void disabledWorkforceUsesBaselineCapacity() {
+    void workforceSummaryWithoutPersistedWorkdayReturnsNoDataWithoutInsert() {
         WorkforceService service = service();
         when(productivityRepository.findTopByOrderByWorkDateDescCreatedAtDesc()).thenReturn(Optional.empty());
         when(routePlanRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(10L);
@@ -45,16 +45,17 @@ class WorkforceServiceTest {
         WorkforceSummaryResponse summary = service.workforceSummary();
 
         assertThat(summary.workforceEnabled()).isFalse();
-        assertThat(summary.baselineCapacity()).isTrue();
-        assertThat(summary.capacityEvents()).isEqualTo(302L);
-        assertThat(summary.available()).isTrue();
-        assertThat(summary.totalHeadcount()).isEqualTo(7);
-        assertThat(summary.effectiveCapacity()).isEqualTo(302L);
+        assertThat(summary.baselineCapacity()).isFalse();
+        assertThat(summary.capacityEvents()).isZero();
+        assertThat(summary.available()).isFalse();
+        assertThat(summary.totalHeadcount()).isZero();
+        assertThat(summary.effectiveCapacity()).isZero();
         assertThat(summary.backlogCount()).isZero();
-        assertThat(summary.bottleneckRole()).isEqualTo("OUTBOX_PUBLISH_CAPACITY");
-        assertThat(summary.workloadEvents()).isEqualTo(17L);
+        assertThat(summary.bottleneckRole()).isEqualTo("NONE");
+        assertThat(summary.workloadEvents()).isZero();
         assertThat(summary.backlogEvents()).isZero();
-        assertThat(summary.status()).isEqualTo("PRODUCTIVITY_REPORTED");
+        assertThat(summary.status()).isEqualTo("NO_DATA");
+        assertThat(summary.degradedReason()).contains("No persisted synthetic workforce");
         verify(productivityRepository, never()).save(any());
         verify(economyService, never()).recordWorkforceCost(any(), any(), any(), any(), any(), any(), any(Long.class), any(), any());
     }
@@ -70,7 +71,8 @@ class WorkforceServiceTest {
         ProductivitySummaryResponse summary = service.productivitySummary();
 
         assertThat(summary.processedEvents()).isZero();
-        assertThat(summary.status()).isEqualTo("PRODUCTIVITY_REPORTED");
+        assertThat(summary.status()).isEqualTo("NO_DATA");
+        assertThat(summary.available()).isFalse();
         verify(productivityRepository, never()).save(any());
     }
 
@@ -86,6 +88,9 @@ class WorkforceServiceTest {
 
         assertThat(summary.workloadEvents()).isZero();
         assertThat(summary.backlogEvents()).isZero();
+        assertThat(summary.available()).isFalse();
+        assertThat(summary.status()).isEqualTo("NO_DATA");
+        assertThat(summary.reason()).contains("No persisted synthetic workforce");
         verify(productivityRepository, never()).save(any());
     }
 

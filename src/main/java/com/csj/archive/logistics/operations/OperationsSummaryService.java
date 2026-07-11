@@ -10,6 +10,7 @@ import com.csj.archive.logistics.route.RouteCostRepository;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.economy.LogisticsEconomySummaryResponse;
+import com.csj.archive.logistics.economy.LogisticsBalanceService;
 import com.csj.archive.logistics.runtime.RuntimeStatusResponse;
 import com.csj.archive.logistics.runtime.RuntimeWorkLoop;
 import com.csj.archive.logistics.workforce.WorkforceService;
@@ -34,6 +35,7 @@ public class OperationsSummaryService {
     private final LedgerPublishProperties ledgerProperties;
     private final WorkforceService workforceService;
     private final RuntimeWorkLoop runtimeWorkLoop;
+    private final LogisticsBalanceService balanceService;
     private final Environment environment;
 
     public OperationsSummaryService(NexusEventRepository nexusEventRepository,
@@ -45,6 +47,7 @@ public class OperationsSummaryService {
                                     LedgerPublishProperties ledgerProperties,
                                     WorkforceService workforceService,
                                     RuntimeWorkLoop runtimeWorkLoop,
+                                    LogisticsBalanceService balanceService,
                                     Environment environment) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
@@ -55,6 +58,7 @@ public class OperationsSummaryService {
         this.ledgerProperties = ledgerProperties;
         this.workforceService = workforceService;
         this.runtimeWorkLoop = runtimeWorkLoop;
+        this.balanceService = balanceService;
         this.environment = environment;
     }
 
@@ -95,6 +99,7 @@ public class OperationsSummaryService {
                         economy.cashBalance(),
                         economy.bankruptcyRisk()
                 ),
+                balanceService.summary(),
                 new OperationsSummaryResponse.Outbox(
                         outboxRepository.countByStatus(OutboxStatus.PENDING),
                         outboxRepository.countByStatus(OutboxStatus.PUBLISHED),

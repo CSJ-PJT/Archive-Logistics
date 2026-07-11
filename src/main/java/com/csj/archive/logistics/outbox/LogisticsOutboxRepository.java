@@ -31,6 +31,9 @@ public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutbox
     @Query("select max(e.createdAt) from LogisticsOutboxEntity e")
     LocalDateTime latestCreatedAt();
 
+    @Query("select min(e.createdAt) from LogisticsOutboxEntity e where e.status in :statuses")
+    LocalDateTime oldestCreatedAtByStatusIn(@Param("statuses") Collection<OutboxStatus> statuses);
+
     @Query("""
             select e from LogisticsOutboxEntity e
             where e.status in :statuses

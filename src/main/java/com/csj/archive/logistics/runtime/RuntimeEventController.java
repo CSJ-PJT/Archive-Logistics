@@ -19,7 +19,16 @@ public class RuntimeEventController {
     }
 
     @GetMapping("/recent")
-    public ApiResponse<List<RuntimeEventResponse>> recent(@RequestParam(defaultValue = "100") int limit) {
+    public ApiResponse<List<RuntimeEventResponse>> recent(
+            @RequestParam(required = false) String after,
+            @RequestParam(defaultValue = "100") int limit
+    ) {
+        return ApiResponse.ok(after == null || after.isBlank()
+                ? runtimeEventService.recent(limit)
+                : runtimeEventService.recentAfter(after, limit));
+    }
+
+    ApiResponse<List<RuntimeEventResponse>> recent(int limit) {
         return ApiResponse.ok(runtimeEventService.recent(limit));
     }
 

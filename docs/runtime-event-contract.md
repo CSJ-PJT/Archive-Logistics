@@ -1,64 +1,54 @@
 # Runtime Event Contract
 
-ArchiveOS Live Flow는 Archive-Logistics의 runtime 상태를 read-only API로 수집한다.
-이 API는 실제 배송/개인/금융 데이터를 만들지 않으며 기존 persisted synthetic runtime data만 노출한다.
+ArchiveOS Live Flow collects Archive-Logistics runtime projections through read-only APIs. These APIs expose persisted Synthetic Runtime Data only and never create actual delivery, personal, address, or financial data.
 
-## API
+## APIs
 
 ```http
 GET /api/runtime-events/recent?limit=100
+GET /api/runtime-events/recent?after={cursor}&limit=100
 GET /api/runtime-events/correlation/{correlationId}
 GET /api/runtime-events/entity/{entityId}
 ```
 
-## 공통 응답 필드
+## Common Response Fields
 
 ```json
 {
-  "eventId": "evt-logitics-20260710-001",
+  "eventId": "evt-logistics-20260711-001",
+  "idempotencyKey": "LOGISTICS:LOGISTICS_COST_CONFIRMED:ROUTE-001",
   "sourceService": "Archive-Logistics",
+  "targetService": "Archive-Ledger",
   "domain": "logistics",
   "eventType": "LOGISTICS_COST_CONFIRMED",
-  "entityType": "ROUTE_PLAN",
-  "entityId": "ROUTE-20260710-001",
+  "entityType": "route_plan",
+  "entityId": "ROUTE-001",
   "correlationId": "CORR-001",
   "causationId": "CAUSE-001",
-  "status": "moving",
-  "severity": "info",
-  "displayLabel": "Ledger publish outbox event",
-  "occurredAt": "2026-07-10T10:00:00",
+  "simulationRunId": "SIM-001",
+  "settlementCycleId": "CYCLE-001",
+  "workdayId": null,
+  "status": "PROCESSING",
+  "severity": "INFO",
+  "displayLabel": "Logistics cost event prepared for Ledger",
+  "occurredAt": "2026-07-11T10:00:00",
+  "hopCount": 0,
+  "maxHop": 5,
+  "cursor": "opaque-runtime-position",
   "metadata": {
-    "routePlanId": "ROUTE-20260710-001",
+    "routePlanId": "ROUTE-001",
     "shipmentId": "SHIP-001",
     "orderId": "ORD-001"
   }
 }
 ```
 
-## Status
+`status` and `severity` follow Runtime Mesh V1 uppercase values. UI labels can be localized, but event types, IDs, enum values, API paths, and cursor values are not translated.
 
-- `created`
-- `moving`
-- `waiting`
-- `approval_required`
-- `approved`
-- `rejected`
-- `delayed`
-- `failed`
-- `completed`
-- `settled`
-- `unavailable`
+## Metadata Rules
 
-## Metadata 제한
+Metadata contains only synthetic IDs, synthetic code categories, and operational counters. It must not contain names, phone numbers, addresses, card/account numbers, payment tokens, secrets, passwords, webhooks, or private keys.
 
-metadata에는 synthetic ID와 synthetic code만 포함한다.
+## Cursor Semantics
 
-금지:
-
-- 실제 이름
-- 전화번호
-- 주소
-- 카드번호
-- 계좌번호
-- 실제 결제 토큰
-- secret/token/password/webhook/private key
+The initial `recent` response is newest-first. A request using `after` receives only newer events in ascending `(occurredAt, eventId)` order. Each event carries its opaque cursor; retain the first bootstrap cursor or the last incremental cursor. Invalid cursors safely return an empty result.

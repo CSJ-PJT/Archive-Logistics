@@ -116,6 +116,7 @@ Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconcilia
 - `GET /api/productivity/summary`
 - `GET /api/capacity/summary`
 - `GET /api/runtime-events/recent?limit=100`
+- `GET /api/runtime-events/recent?after={cursor}&limit=100`
 - `GET /api/runtime-events/correlation/{correlationId}`
 - `GET /api/runtime-events/entity/{entityId}`
 - `GET /api/runtime/status`
@@ -185,7 +186,8 @@ ArchiveOS는 Archive-Logistics의 배송 흐름을 read-only runtime event proje
 화면용 random truck/token 데이터나 실제 주소 데이터를 만들지 않습니다.
 
 대표 이벤트는 `SHIPMENT_CREATED`, `ROUTE_ASSIGNED`, `ROUTE_COST_CALCULATED`, `TRUCK_DISPATCHED`,
-`DELIVERY_DELAYED`, `DELIVERY_COMPLETED`, `LOGISTICS_COST_CONFIRMED`, `LEDGER_EVENT_PUBLISHED`,
+`DELIVERY_IN_TRANSIT`, `DELIVERY_DELAYED`, `DELIVERY_COMPLETED`, `COLD_CHAIN_RISK_DETECTED`,
+`LOGISTICS_COST_CONFIRMED`, `LEDGER_EVENT_PUBLISHED`,
 `WORKFORCE_ALLOCATION_ASSIGNED`, `WORKDAY_COMPLETED`, `CAPACITY_SHORTAGE_DETECTED`,
 `LOGISTICS_BACKLOG_INCREASED`입니다.
 
@@ -215,6 +217,30 @@ GET /api/runtime/status
 
 GET summary API는 계속 read-only입니다. 자동 루프의 write는 scheduler tick에서만 수행되고,
 eventId/idempotencyKey/correlationId/hop guard와 per-tick limit으로 이벤트 폭증을 막습니다.
+
+## Live Shipment Runtime and Balance
+
+auto-run tick은 Nexus-origin synthetic shipment request를 정상 ingestion 경로로 처리한 뒤,
+route/ETA/cost/risk 계산, workforce capacity 확인, dispatch, in-transit, completed 또는 delayed 상태 전이를
+실행합니다. 상태 이력은 `shipment_runtime_event`에 eventId/idempotencyKey 기준으로 한 번만 저장되어
+동일 shipment의 중복 완료를 방지합니다.
+
+`GET /api/operations/summary`와 `GET /api/logistics-economy/summary`의 `balance`는 다음 read-only 지표를 제공합니다.
+
+- `logisticsRevenue`, `fuelCost`, `tollCost`, `workforceCost`, `delayPenaltyCost`, `coldChainCost`, `ledgerFee`
+- `operatingProfit`, `operatingMargin`, `cashBalance`, `negativeProfitStreak`
+- `shipmentsRequested`, `shipmentsDispatched`, `shipmentsDelayed`, `shipmentsCompleted`, `backlogCount`
+- `capacityUtilization`, `bottleneckRole`, `averageEta`, `delayRate`
+
+Market/Nexus에서 전달된 `orderId`, `customerType`, `productType`, `priority`, `correlationId`,
+`causationId`, `simulationRunId`, `settlementCycleId`는 route, lifecycle event, Ledger payload에 유지합니다.
+Runtime metadata는 실제 주소 대신 `destinationType`과 `syntheticHubId`만 사용합니다.
+
+ArchiveOS Runtime Mesh V1은 pull 기반으로 동작합니다. `recent?after={cursor}`는 동일 시각 이벤트까지
+안정적으로 이어 읽을 수 있는 opaque cursor를 지원합니다. 저장된 workforce workday 결과가 없는 초기 상태에서는
+각 workforce summary가 HTTP 200과 함께 `available=false`, `NO_DATA`, reason을 반환해 정상 0처리량과 구분합니다.
+ArchiveOS ingest의 최종 인증/payload 계약이 확정되기 전에는 임의 push client를 만들지 않으며, Ledger outbox의
+기존 retry/backoff·장애 격리 정책은 그대로 유지됩니다.
 
 ## Internationalization
 
@@ -289,6 +315,10 @@ curl.exe http://localhost:8092/api/logistics-economy/summary
 - [Logistics Productivity Model](./docs/logistics-productivity-model.md)
 - [Workforce Event Contract](./docs/workforce-event-contract.md)
 - [ArchiveOS Live Flow Contract](./docs/archiveos-live-flow-contract.md)
+- [Archive Runtime Mesh V1 Contract](./docs/archive-runtime-mesh-contract.md)
+- [ArchiveOS Realtime Integration](./docs/archiveos-realtime-integration.md)
+- [Runtime Operations Runbook](./docs/runtime-operations-runbook.md)
+- [Live Shipment Runtime](./docs/live-shipment-runtime.md)
 - [Runtime Event Contract](./docs/runtime-event-contract.md)
 - [Operations Summary Contract](./docs/operations-summary-contract.md)
 - [Game Economy Economics Notes](./docs/game-economy-logistics.md)

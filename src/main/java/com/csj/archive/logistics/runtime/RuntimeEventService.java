@@ -14,6 +14,8 @@ import com.csj.archive.logistics.workforce.WorkdayProductivityRepository;
 import com.csj.archive.logistics.workforce.WorkforceAllocationEntity;
 import com.csj.archive.logistics.workforce.WorkforceAllocationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,24 +38,59 @@ public class RuntimeEventService {
     private final LogisticsOutboxRepository outboxRepository;
     private final WorkforceAllocationRepository workforceAllocationRepository;
     private final WorkdayProductivityRepository workdayProductivityRepository;
+    private final ShipmentRuntimeEventRepository shipmentRuntimeEventRepository;
+    private final ObjectMapper objectMapper;
 
     public RuntimeEventService(NexusEventRepository nexusEventRepository,
                                RoutePlanRepository routePlanRepository,
                                RouteCostRepository routeCostRepository,
                                LogisticsOutboxRepository outboxRepository,
                                WorkforceAllocationRepository workforceAllocationRepository,
-                               WorkdayProductivityRepository workdayProductivityRepository) {
+                               WorkdayProductivityRepository workdayProductivityRepository,
+                               ShipmentRuntimeEventRepository shipmentRuntimeEventRepository,
+                               ObjectMapper objectMapper) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
         this.routeCostRepository = routeCostRepository;
         this.outboxRepository = outboxRepository;
         this.workforceAllocationRepository = workforceAllocationRepository;
         this.workdayProductivityRepository = workdayProductivityRepository;
+        this.shipmentRuntimeEventRepository = shipmentRuntimeEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     public List<RuntimeEventResponse> recent(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 500));
-        PageRequest page = PageRequest.of(0, safeLimit);
+        return allRecent(safeLimit).stream()
+                .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed()
+                        .thenComparing(RuntimeEventResponse::eventId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(safeLimit)
+                .toList();
+    }
+
+    public List<RuntimeEventResponse> recentAfter(String after, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 500));
+        return RuntimeEventCursor.decode(after)
+                .map(cursor -> allRecent(500).stream()
+                        .filter(event -> isAfter(event, cursor))
+                        .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                                .thenComparing(RuntimeEventResponse::eventId, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .limit(safeLimit)
+                        .toList())
+                .orElseGet(List::of);
+    }
+
+    public String latestCursor() {
+        return allRecent(500).stream()
+                .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed()
+                        .thenComparing(RuntimeEventResponse::eventId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .findFirst()
+                .map(RuntimeEventResponse::cursor)
+                .orElse(null);
+    }
+
+    private List<RuntimeEventResponse> allRecent(int sourceLimit) {
+        PageRequest page = PageRequest.of(0, sourceLimit);
         List<RuntimeEventResponse> events = new ArrayList<>();
         nexusEventRepository.findAllByOrderByCreatedAtDesc(page).forEach(event -> events.add(fromNexus(event)));
         routePlanRepository.findAllByOrderByCreatedAtDesc(page).forEach(route -> events.addAll(fromRoute(route)));
@@ -61,10 +98,16 @@ public class RuntimeEventService {
         outboxRepository.findAllByOrderByCreatedAtDesc(page).forEach(outbox -> events.addAll(fromOutbox(outbox)));
         workforceAllocationRepository.findAllByOrderByCreatedAtDesc(page).forEach(allocation -> events.add(fromAllocation(allocation)));
         workdayProductivityRepository.findAllByOrderByCreatedAtDesc(page).forEach(workday -> events.addAll(fromWorkday(workday)));
-        return events.stream()
-                .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                .limit(safeLimit)
-                .toList();
+        shipmentRuntimeEventRepository.findAllByOrderByOccurredAtDesc(page).forEach(event -> events.add(fromShipmentRuntime(event)));
+        return events;
+    }
+
+    private boolean isAfter(RuntimeEventResponse event, RuntimeEventCursor.Position cursor) {
+        if (event.occurredAt() == null || event.eventId() == null) {
+            return false;
+        }
+        int timeComparison = event.occurredAt().compareTo(cursor.occurredAt());
+        return timeComparison > 0 || (timeComparison == 0 && event.eventId().compareTo(cursor.eventId()) > 0);
     }
 
     public List<RuntimeEventResponse> byCorrelation(String correlationId) {
@@ -78,6 +121,7 @@ public class RuntimeEventService {
             outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
             nexusEventRepository.findByEventId(route.sourceEventId()).ifPresent(event -> events.add(fromNexus(event)));
         });
+        shipmentRuntimeEventRepository.findByCorrelationIdOrderByOccurredAtDesc(correlationId).forEach(event -> events.add(fromShipmentRuntime(event)));
         return sorted(events);
     }
 
@@ -93,6 +137,7 @@ public class RuntimeEventService {
             outboxRepository.findByAggregateId(route.routePlanId()).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
         });
         routePlanRepository.findByShipmentId(entityId).forEach(route -> events.addAll(fromRoute(route)));
+        shipmentRuntimeEventRepository.findByShipmentIdOrderByOccurredAtDesc(entityId).forEach(event -> events.add(fromShipmentRuntime(event)));
         outboxRepository.findByEventId(entityId).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
         outboxRepository.findByAggregateId(entityId).ifPresent(outbox -> events.addAll(fromOutbox(outbox)));
         return sorted(events);
@@ -100,7 +145,8 @@ public class RuntimeEventService {
 
     private List<RuntimeEventResponse> sorted(List<RuntimeEventResponse> events) {
         return events.stream()
-                .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .sorted(Comparator.comparing(RuntimeEventResponse::occurredAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed()
+                        .thenComparing(RuntimeEventResponse::eventId, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
     }
 
@@ -127,7 +173,14 @@ public class RuntimeEventService {
                         "originType", syntheticLocationType(text(payload, "originCode", null)),
                         "destinationType", syntheticLocationType(text(payload, "destinationCode", null)),
                         "priority", text(payload, "priority", null),
-                        "orderId", text(payload, "orderId", null)
+                        "orderId", text(payload, "orderId", null),
+                        "idempotencyKey", event.idempotencyKey(),
+                        "targetService", SERVICE,
+                        "simulationRunId", text(payload, "simulationRunId", null),
+                        "settlementCycleId", text(payload, "settlementCycleId", null),
+                        "workdayId", text(payload, "workdayId", null),
+                        "hopCount", text(payload, "hopCount", "0"),
+                        "maxHop", text(payload, "maxHop", "5")
                 )
         );
     }
@@ -152,22 +205,30 @@ public class RuntimeEventService {
                         "originType", syntheticLocationType(route.originCode()),
                         "destinationType", syntheticLocationType(route.destinationCode()),
                         "orderId", route.orderId(),
-                        "settlementCycleId", route.settlementCycleId()
+                        "targetService", "Archive-Ledger",
+                        "idempotencyKey", "RUNTIME:ROUTE_ASSIGNED:" + route.routePlanId(),
+                        "simulationRunId", route.simulationRunId(),
+                        "settlementCycleId", route.settlementCycleId(),
+                        "hopCount", 0,
+                        "maxHop", 5
                 )
         );
-        RuntimeEventResponse dispatch = route.delayed()
-                ? routeLifecycle(route, "DELIVERY_DELAYED", "delayed", "warning", "Delivery delayed by synthetic risk/capacity signal")
-                : routeLifecycle(route, "TRUCK_DISPATCHED", "moving", "info", "Synthetic truck dispatched");
-        RuntimeEventResponse completed = route.delayed()
-                ? null
-                : routeLifecycle(route, "DELIVERY_COMPLETED", "completed", "normal", "Synthetic delivery completed");
-        List<RuntimeEventResponse> events = new ArrayList<>();
-        events.add(assigned);
-        events.add(dispatch);
-        if (completed != null) {
-            events.add(completed);
-        }
-        return events;
+        return List.of(assigned);
+    }
+
+    private RuntimeEventResponse fromShipmentRuntime(ShipmentRuntimeEventEntity event) {
+        return new RuntimeEventResponse(
+                event.eventId(), event.idempotencyKey(), event.sourceService(), event.targetService(), "logistics",
+                event.eventType(), "shipment", event.shipmentId(), event.correlationId(), event.causationId(),
+                event.simulationRunId(), event.settlementCycleId(), event.workdayId(), event.status(), event.severity(),
+                event.eventType().replace('_', ' '), event.occurredAt(), event.hopCount(), event.maxHop(),
+                event.metadata() == null ? Map.of() : objectMetadata(event.metadata()),
+                RuntimeEventCursor.encode(event.occurredAt(), event.eventId())
+        );
+    }
+
+    private Map<String, Object> objectMetadata(JsonNode metadata) {
+        return objectMapper.convertValue(metadata, new TypeReference<Map<String, Object>>() { });
     }
 
     private RuntimeEventResponse routeLifecycle(RoutePlanEntity route, String eventType, String status, String severity, String label) {
@@ -189,7 +250,13 @@ public class RuntimeEventService {
                         "shipmentId", route.shipmentId(),
                         "orderId", route.orderId(),
                         "destinationType", syntheticLocationType(route.destinationCode()),
-                        "delayed", route.delayed()
+                        "delayed", route.delayed(),
+                        "targetService", "Archive-Ledger",
+                        "idempotencyKey", "RUNTIME:" + eventType + ":" + route.routePlanId(),
+                        "simulationRunId", route.simulationRunId(),
+                        "settlementCycleId", route.settlementCycleId(),
+                        "hopCount", 0,
+                        "maxHop", 5
                 )
         );
     }
@@ -214,7 +281,12 @@ public class RuntimeEventService {
                         "totalCost", cost.totalCost(),
                         "currency", cost.currency(),
                         "requiresApproval", cost.requiresApproval(),
-                        "settlementCycleId", cost.settlementCycleId()
+                        "targetService", "Archive-Ledger",
+                        "idempotencyKey", "RUNTIME:ROUTE_COST_CALCULATED:" + cost.routePlanId(),
+                        "simulationRunId", cost.simulationRunId(),
+                        "settlementCycleId", cost.settlementCycleId(),
+                        "hopCount", 0,
+                        "maxHop", 5
                 )
         );
     }
@@ -239,7 +311,13 @@ public class RuntimeEventService {
                         "routePlanId", text(payload, "routePlanId", outbox.aggregateId()),
                         "shipmentId", text(payload, "shipmentId", null),
                         "orderId", text(payload, "orderId", null),
-                        "workdayId", text(payload, "workdayId", null)
+                        "workdayId", text(payload, "workdayId", null),
+                        "idempotencyKey", outbox.idempotencyKey(),
+                        "targetService", "Archive-Ledger",
+                        "simulationRunId", text(payload, "simulationRunId", null),
+                        "settlementCycleId", text(payload, "settlementCycleId", null),
+                        "hopCount", text(payload, "hopCount", "0"),
+                        "maxHop", text(payload, "maxHop", "5")
                 )
         );
         if (outbox.status() != OutboxStatus.PUBLISHED) {
@@ -263,7 +341,13 @@ public class RuntimeEventService {
                         "routePlanId", text(payload, "routePlanId", outbox.aggregateId()),
                         "shipmentId", text(payload, "shipmentId", null),
                         "orderId", text(payload, "orderId", null),
-                        "workdayId", text(payload, "workdayId", null)
+                        "workdayId", text(payload, "workdayId", null),
+                        "idempotencyKey", outbox.idempotencyKey(),
+                        "targetService", "Archive-Ledger",
+                        "simulationRunId", text(payload, "simulationRunId", null),
+                        "settlementCycleId", text(payload, "settlementCycleId", null),
+                        "hopCount", text(payload, "hopCount", "0"),
+                        "maxHop", text(payload, "maxHop", "5")
                 )
         );
         return List.of(costConfirmed, published);
@@ -288,7 +372,12 @@ public class RuntimeEventService {
                         "roleType", allocation.roleType().name(),
                         "allocatedHeadcount", allocation.allocatedHeadcount(),
                         "effectiveCapacity", allocation.effectiveCapacity(),
-                        "settlementCycleId", allocation.settlementCycleId()
+                        "idempotencyKey", "RUNTIME:WORKFORCE_ALLOCATION_ASSIGNED:" + allocation.allocationId(),
+                        "targetService", allocation.targetService(),
+                        "simulationRunId", allocation.simulationRunId(),
+                        "settlementCycleId", allocation.settlementCycleId(),
+                        "hopCount", allocation.hopCount(),
+                        "maxHop", allocation.maxHop()
                 )
         );
     }
@@ -313,7 +402,12 @@ public class RuntimeEventService {
                         "shipmentsDispatched", workday.shipmentsDispatched(),
                         "deliveryCompleted", workday.deliveryCompleted(),
                         "shipmentsDelayed", workday.shipmentsDelayed(),
-                        "bottleneckRole", workday.bottleneckType()
+                        "bottleneckRole", workday.bottleneckType(),
+                        "idempotencyKey", "RUNTIME:WORKDAY_COMPLETED:" + workday.workdayId(),
+                        "targetService", "ArchiveOS",
+                        "workdayId", workday.workdayId(),
+                        "hopCount", 0,
+                        "maxHop", 5
                 )
         ));
         if (workday.shortageEvents() > 0) {
@@ -343,7 +437,12 @@ public class RuntimeEventService {
                         "count", count,
                         "bottleneckRole", workday.bottleneckType(),
                         "totalCapacity", workday.capacityEvents(),
-                        "usedCapacity", workday.usedCapacity()
+                        "usedCapacity", workday.usedCapacity(),
+                        "idempotencyKey", "RUNTIME:" + eventType + ":" + workday.workdayId(),
+                        "targetService", "ArchiveOS",
+                        "workdayId", workday.workdayId(),
+                        "hopCount", 0,
+                        "maxHop", 5
                 )
         );
     }

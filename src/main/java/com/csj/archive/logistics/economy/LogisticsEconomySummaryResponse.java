@@ -10,11 +10,12 @@ public record LogisticsEconomySummaryResponse(
         long cashBalance,
         String bankruptcyRisk,
         String latestSnapshotId,
-        Workforce workforce
+        Workforce workforce,
+        LogisticsBalanceSummaryResponse balance
 ) {
     public static LogisticsEconomySummaryResponse from(LogisticsProfitSnapshotEntity snapshot, long totalRevenue, long totalCost) {
         if (snapshot == null) {
-            return new LogisticsEconomySummaryResponse(totalRevenue, totalCost, totalRevenue - totalCost, 0L, "UNKNOWN", null, null);
+            return new LogisticsEconomySummaryResponse(totalRevenue, totalCost, totalRevenue - totalCost, 0L, "UNKNOWN", null, null, null);
         }
         return new LogisticsEconomySummaryResponse(
                 totalRevenue,
@@ -23,6 +24,7 @@ public record LogisticsEconomySummaryResponse(
                 snapshot.cashBalance(),
                 snapshot.bankruptcyRisk(),
                 snapshot.snapshotId(),
+                null,
                 null
         );
     }
@@ -43,7 +45,14 @@ public record LogisticsEconomySummaryResponse(
                         summary.backlogEvents(),
                         summary.syntheticLaborCost(),
                         summary.bottleneckType()
-                )
+                ),
+                balance
+        );
+    }
+
+    public LogisticsEconomySummaryResponse withBalance(LogisticsBalanceSummaryResponse value) {
+        return new LogisticsEconomySummaryResponse(
+                totalRevenue, totalCost, totalProfit, cashBalance, bankruptcyRisk, latestSnapshotId, workforce, value
         );
     }
 

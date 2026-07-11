@@ -27,6 +27,17 @@ class RuntimeEventControllerTest {
     }
 
     @Test
+    void recentEventsAfterCursorApiReturnsOk() {
+        when(runtimeEventService.recentAfter(eq("cursor-1"), anyInt())).thenReturn(List.of(event()));
+
+        var response = controller.recent("cursor-1", 10);
+
+        assertThat(response.data()).hasSize(1);
+        assertThat(response.data().getFirst().status()).isEqualTo("COMPLETED");
+        assertThat(response.data().getFirst().idempotencyKey()).isEqualTo("RUNTIME:evt-runtime-1");
+    }
+
+    @Test
     void correlationEventsApiReturnsOk() throws Exception {
         when(runtimeEventService.byCorrelation(eq("CORR-1"))).thenReturn(List.of(event()));
 

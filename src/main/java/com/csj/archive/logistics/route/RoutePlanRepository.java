@@ -14,6 +14,8 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
 
     Optional<RoutePlanEntity> findBySourceEventId(String sourceEventId);
 
+    List<RoutePlanEntity> findBySourceEventIdIn(java.util.Collection<String> sourceEventIds);
+
     List<RoutePlanEntity> findByShipmentId(String shipmentId);
 
     List<RoutePlanEntity> findByCorrelationId(String correlationId);
@@ -43,6 +45,13 @@ public interface RoutePlanRepository extends JpaRepository<RoutePlanEntity, Long
     long countByExpressOrderTrue();
 
     long countByCustomerType(String customerType);
+
+    long countByRouteStatus(String routeStatus);
+
+    long countByRouteStatusIn(java.util.Collection<String> routeStatuses);
+
+    @Query("select coalesce(avg(p.estimatedMinutes), 0) from RoutePlanEntity p")
+    Double averageEstimatedMinutes();
 
     @Query("select count(p) from RoutePlanEntity p where (p.customerType = :riskCustomerType) or (coalesce(p.riskLevel, 0) >= :riskLevelThreshold)")
     long countByHighRiskCustomerOrRiskLevel(@Param("riskCustomerType") String riskCustomerType,

@@ -283,6 +283,11 @@ public class RoutePlanEntity {
         return routeStatus;
     }
 
+    public void transitionTo(String nextStatus, LocalDateTime now) {
+        this.routeStatus = nextStatus;
+        this.updatedAt = now;
+    }
+
     public LocalDateTime createdAt() {
         return createdAt;
     }

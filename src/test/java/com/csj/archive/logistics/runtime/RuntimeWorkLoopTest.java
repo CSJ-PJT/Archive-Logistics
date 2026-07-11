@@ -31,6 +31,8 @@ class RuntimeWorkLoopTest {
     private final WorkforceService workforceService = mock(WorkforceService.class);
     private final LogisticsOutboxRepository outboxRepository = mock(LogisticsOutboxRepository.class);
     private final RoutePlanRepository routePlanRepository = mock(RoutePlanRepository.class);
+    private final RuntimeEventService runtimeEventService = mock(RuntimeEventService.class);
+    private final ShipmentLifecycleService shipmentLifecycleService = mock(ShipmentLifecycleService.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-07-10T10:00:00Z"), ZoneOffset.UTC);
     private final RuntimeWorkLoop loop = new RuntimeWorkLoop(
             properties,
@@ -38,6 +40,8 @@ class RuntimeWorkLoopTest {
             workforceService,
             outboxRepository,
             routePlanRepository,
+            runtimeEventService,
+            shipmentLifecycleService,
             new DeterministicHash(),
             clock
     );
@@ -55,6 +59,7 @@ class RuntimeWorkLoopTest {
         ArgumentCaptor<NexusLogisticsBulkEventRequest> captor = ArgumentCaptor.forClass(NexusLogisticsBulkEventRequest.class);
         verify(nexusService).processBulk(captor.capture());
         verify(workforceService).runWorkday(LocalDate.parse("2026-07-10"));
+        verify(shipmentLifecycleService).advance(any(), any());
         assertThat(captor.getValue().events()).hasSize(3);
         assertThat(result.eventsProduced()).isEqualTo(3);
         assertThat(loop.status().lastWorkAt()).isEqualTo(LocalDateTime.parse("2026-07-10T10:00:00"));

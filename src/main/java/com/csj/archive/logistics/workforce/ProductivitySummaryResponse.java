@@ -11,6 +11,21 @@ public record ProductivitySummaryResponse(
         BigDecimal productivityRate,
         BigDecimal utilizationRate,
         long delayedResponseLoad,
-        String status
+        String status,
+        boolean available,
+        String reason
 ) {
+    public ProductivitySummaryResponse(
+            String service,
+            LocalDate workDate,
+            long processedEvents,
+            long capacityEvents,
+            BigDecimal productivityRate,
+            BigDecimal utilizationRate,
+            long delayedResponseLoad,
+            String status
+    ) {
+        this(service, workDate, processedEvents, capacityEvents, productivityRate, utilizationRate,
+                delayedResponseLoad, status, true, null);
+    }
 }

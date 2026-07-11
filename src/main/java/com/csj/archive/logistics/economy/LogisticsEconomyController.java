@@ -17,16 +17,21 @@ import java.time.LocalDate;
 public class LogisticsEconomyController {
     private final LogisticsEconomyService economyService;
     private final WorkforceService workforceService;
+    private final LogisticsBalanceService balanceService;
 
     public LogisticsEconomyController(LogisticsEconomyService economyService,
-                                      WorkforceService workforceService) {
+                                      WorkforceService workforceService,
+                                      LogisticsBalanceService balanceService) {
         this.economyService = economyService;
         this.workforceService = workforceService;
+        this.balanceService = balanceService;
     }
 
     @GetMapping("/summary")
     public ApiResponse<LogisticsEconomySummaryResponse> summary() {
-        return ApiResponse.ok(economyService.summary().withWorkforce(workforceService.workforceSummary()));
+        return ApiResponse.ok(economyService.summary()
+                .withWorkforce(workforceService.workforceSummary())
+                .withBalance(balanceService.summary()));
     }
 
     @GetMapping("/revenue-events")

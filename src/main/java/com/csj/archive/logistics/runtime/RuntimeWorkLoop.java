@@ -46,6 +46,8 @@ public class RuntimeWorkLoop {
     private final WorkforceService workforceService;
     private final LogisticsOutboxRepository outboxRepository;
     private final RoutePlanRepository routePlanRepository;
+    private final RuntimeEventService runtimeEventService;
+    private final ShipmentLifecycleService shipmentLifecycleService;
     private final DeterministicHash hash;
     private final Clock clock;
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -56,6 +58,8 @@ public class RuntimeWorkLoop {
                            WorkforceService workforceService,
                            LogisticsOutboxRepository outboxRepository,
                            RoutePlanRepository routePlanRepository,
+                           RuntimeEventService runtimeEventService,
+                           ShipmentLifecycleService shipmentLifecycleService,
                            DeterministicHash hash,
                            Clock clock) {
         this.properties = properties;
@@ -63,6 +67,8 @@ public class RuntimeWorkLoop {
         this.workforceService = workforceService;
         this.outboxRepository = outboxRepository;
         this.routePlanRepository = routePlanRepository;
+        this.runtimeEventService = runtimeEventService;
+        this.shipmentLifecycleService = shipmentLifecycleService;
         this.hash = hash;
         this.clock = clock;
     }
@@ -90,10 +96,12 @@ public class RuntimeWorkLoop {
             int allowedEvents = backlog >= properties.getMaxBacklogPerTick()
                     ? 0
                     : (int) Math.min(maxEvents, Math.max(0L, properties.getMaxBacklogPerTick() - backlog));
+            List<NexusLogisticsEventRequest> tickEvents = allowedEvents == 0 ? List.of() : events(tickId, allowedEvents, now);
             BulkEventProcessingResult result = allowedEvents == 0
                     ? new BulkEventProcessingResult(0, 0, 0, 0, 0, 0, 0, 0)
-                    : nexusLogisticsEventService.processBulk(new NexusLogisticsBulkEventRequest(events(tickId, allowedEvents, now)));
-            workforceService.runWorkday(LocalDate.now(clock));
+                    : nexusLogisticsEventService.processBulk(new NexusLogisticsBulkEventRequest(tickEvents));
+            var workday = workforceService.runWorkday(LocalDate.now(clock));
+            shipmentLifecycleService.advance(tickEvents, workday);
             long updatedBacklog = backlogCount();
             LocalDateTime latestEventAt = latestEventAt();
             String status = updatedBacklog >= properties.getMaxBacklogPerTick() ? "BACKLOG_LIMITED" : "RUNNING";
@@ -148,9 +156,12 @@ public class RuntimeWorkLoop {
                 current.eventsProducedLastTick(),
                 current.eventsConsumedLastTick(),
                 backlog,
+                oldestBacklogAgeSeconds(),
                 current.pipelineStatus(),
                 current.lastTickId(),
-                current.lastMessage()
+                current.lastMessage(),
+                latestCursor(),
+                degradedReason(current, backlog)
         );
     }
 
@@ -228,6 +239,28 @@ public class RuntimeWorkLoop {
 
     private LocalDateTime latestEventAt() {
         return routePlanRepository.latestCreatedAt();
+    }
+
+    private Long oldestBacklogAgeSeconds() {
+        LocalDateTime oldest = outboxRepository.oldestCreatedAtByStatusIn(List.of(OutboxStatus.PENDING, OutboxStatus.RETRY));
+        if (oldest == null) {
+            return null;
+        }
+        return Math.max(0L, java.time.Duration.between(oldest, LocalDateTime.now(clock)).toSeconds());
+    }
+
+    private String latestCursor() {
+        return runtimeEventService.latestCursor();
+    }
+
+    private String degradedReason(State current, long backlog) {
+        if ("DEGRADED".equals(current.schedulerStatus())) {
+            return current.lastMessage();
+        }
+        if (backlog >= properties.getMaxBacklogPerTick()) {
+            return "Runtime outbox backlog guard is active.";
+        }
+        return null;
     }
 
     private record State(

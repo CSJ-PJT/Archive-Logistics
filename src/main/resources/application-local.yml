@@ -19,6 +19,8 @@ archive:
     base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
     contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}
+  economy:
+    enabled: ${ARCHIVE_ECONOMY_ENABLED:true}
   outbox:
     scheduler:
       enabled: ${ARCHIVE_OUTBOX_SCHEDULER_ENABLED:true}

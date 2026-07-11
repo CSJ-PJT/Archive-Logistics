@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
+import java.util.Collection;
 
 public interface LogisticsRevenueEventRepository extends JpaRepository<LogisticsRevenueEventEntity, Long> {
     Optional<LogisticsRevenueEventEntity> findByEventId(String eventId);
@@ -24,5 +25,7 @@ public interface LogisticsRevenueEventRepository extends JpaRepository<Logistics
             select coalesce(sum(e.revenueAmount), 0) from LogisticsRevenueEventEntity e
             """)
     Long sumRevenue();
-}
 
+    @Query("select coalesce(sum(e.revenueAmount), 0) from LogisticsRevenueEventEntity e where e.revenueType in :types")
+    Long sumRevenueByRevenueTypeIn(@org.springframework.data.repository.query.Param("types") Collection<LogisticsRevenueType> types);
+}
