@@ -31,10 +31,10 @@ class OperationsSummaryResponseTest {
                 1,
                 new OperationsSummaryResponse.Economy(100, 50, 50, 1_000, "LOW"),
                 new com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse(
-                        100, 10, 5, 20, 0, 0, 0, 50,
-                        java.math.BigDecimal.valueOf(0.5), 1_000, 10, 8, 2, 8, 1,
+                        true, "AVAILABLE", null, 100L, 10L, 5L, 20L, 0L, 0L, 0L, 50L, 50L,
+                        java.math.BigDecimal.valueOf(0.5), 1_000L, 10L, 8L, 2L, 8L, 1L,
                         java.math.BigDecimal.valueOf(0.6), "NONE", java.math.BigDecimal.valueOf(60),
-                        java.math.BigDecimal.valueOf(0.2), 0
+                        java.math.BigDecimal.valueOf(0.2), 0, "PERSISTED_SYNTHETIC_RUNTIME_DATA", LocalDateTime.parse("2026-07-10T10:00:00")
                 ),
                 new OperationsSummaryResponse.Outbox(0, 1, 0, 0, 0),
                 new OperationsSummaryResponse.Risk(0, 0, 0, 0),
@@ -56,5 +56,7 @@ class OperationsSummaryResponseTest {
         assertThat(response.workforce().driverCapacity()).isEqualTo(8);
         assertThat(response.runtime().schedulerStatus()).isEqualTo("RUNNING");
         assertThat(response.balance().operatingMargin()).isEqualByComparingTo("0.5");
+        assertThat(response.balance().available()).isTrue();
+        assertThat(response.balance().totalCost()).isEqualTo(50L);
     }
 }

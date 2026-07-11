@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,17 +22,20 @@ public class LogisticsBalanceService {
     private final LogisticsProfitSnapshotRepository snapshotRepository;
     private final RoutePlanRepository routePlanRepository;
     private final WorkforceService workforceService;
+    private final Clock clock;
 
     public LogisticsBalanceService(LogisticsEconomyService economyService,
                                    LogisticsCostEventRepository costEventRepository,
                                    LogisticsProfitSnapshotRepository snapshotRepository,
                                    RoutePlanRepository routePlanRepository,
-                                   WorkforceService workforceService) {
+                                   WorkforceService workforceService,
+                                   Clock clock) {
         this.economyService = economyService;
         this.costEventRepository = costEventRepository;
         this.snapshotRepository = snapshotRepository;
         this.routePlanRepository = routePlanRepository;
         this.workforceService = workforceService;
+        this.clock = clock;
     }
 
     public LogisticsBalanceSummaryResponse summary() {
@@ -50,13 +55,23 @@ public class LogisticsBalanceService {
         long completed = routePlanRepository.countByRouteStatus("DELIVERY_COMPLETED");
         long delayed = routePlanRepository.countByRouteStatus("DELIVERY_DELAYED");
         long dispatched = routePlanRepository.countByRouteStatusIn(List.of("DELIVERY_IN_TRANSIT", "DELIVERY_COMPLETED", "DELIVERY_DELAYED"));
+        LocalDateTime calculatedAt = LocalDateTime.now(clock);
+        if (requested == 0 && revenue == 0 && economy.totalCost() == 0 && !workforce.available()) {
+            return new LogisticsBalanceSummaryResponse(
+                    false, "NO_DATA", "No persisted synthetic logistics runtime or economy data is available.",
+                    null, null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null, null, null, null, null,
+                    "PERSISTED_SYNTHETIC_RUNTIME_DATA", calculatedAt
+            );
+        }
         return new LogisticsBalanceSummaryResponse(
-                revenue, fuel, toll, workforceCost, delayCost, coldChainCost, ledgerFee,
+                true, "AVAILABLE", null,
+                revenue, fuel, toll, workforceCost, delayCost, coldChainCost, ledgerFee, economy.totalCost(),
                 revenue - economy.totalCost(), ratio(revenue - economy.totalCost(), revenue), economy.cashBalance(),
                 requested, dispatched, delayed, completed, workforce.backlogCount(),
                 ratio(workforce.usedCapacity(), workforce.effectiveCapacity()), workforce.bottleneckRole(),
                 BigDecimal.valueOf(routePlanRepository.averageEstimatedMinutes() == null ? 0D : routePlanRepository.averageEstimatedMinutes()).setScale(2, RoundingMode.HALF_UP),
-                ratio(delayed, requested), negativeProfitStreak()
+                ratio(delayed, requested), negativeProfitStreak(), "PERSISTED_SYNTHETIC_RUNTIME_DATA", calculatedAt
         );
     }
 

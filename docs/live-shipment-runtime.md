@@ -31,6 +31,8 @@ When a route is delayed by deterministic risk, exceeds the configured capacity b
 
 ArchiveOS reads the `balance` section from operations/economy summaries. It is calculated read-only from persisted synthetic revenue events, cost events, route statuses, profit snapshots, and workforce results.
 
+Every balance response includes `available`, `status`, `calculationScope`, and `calculatedAt`. When no persisted runtime/economy data exists, metric fields are `null`, `available=false`, and `status=NO_DATA` with a reason.
+
 | Field | Source |
 | --- | --- |
 | `logisticsRevenue` | persisted logistics revenue events |

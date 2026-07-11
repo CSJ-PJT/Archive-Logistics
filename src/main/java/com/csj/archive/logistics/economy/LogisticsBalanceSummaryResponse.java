@@ -1,27 +1,34 @@
 package com.csj.archive.logistics.economy;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record LogisticsBalanceSummaryResponse(
-        long logisticsRevenue,
-        long fuelCost,
-        long tollCost,
-        long workforceCost,
-        long delayPenaltyCost,
-        long coldChainCost,
-        long ledgerFee,
-        long operatingProfit,
+        boolean available,
+        String status,
+        String reason,
+        Long logisticsRevenue,
+        Long fuelCost,
+        Long tollCost,
+        Long workforceCost,
+        Long delayPenaltyCost,
+        Long coldChainCost,
+        Long ledgerFee,
+        Long totalCost,
+        Long operatingProfit,
         BigDecimal operatingMargin,
-        long cashBalance,
-        long shipmentsRequested,
-        long shipmentsDispatched,
-        long shipmentsDelayed,
-        long shipmentsCompleted,
-        long backlogCount,
+        Long cashBalance,
+        Long shipmentsRequested,
+        Long shipmentsDispatched,
+        Long shipmentsDelayed,
+        Long shipmentsCompleted,
+        Long backlogCount,
         BigDecimal capacityUtilization,
         String bottleneckRole,
         BigDecimal averageEta,
         BigDecimal delayRate,
-        int negativeProfitStreak
+        Integer negativeProfitStreak,
+        String calculationScope,
+        LocalDateTime calculatedAt
 ) {
 }
