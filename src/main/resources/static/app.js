@@ -37,6 +37,24 @@ function formatCurrency(value) {
   return t("common.currencyKrw", { value: formatNumber(value) });
 }
 
+function formatOptionalCurrency(value) {
+  return value == null ? t("common.noData") : formatCurrency(value);
+}
+
+function formatOptionalNumber(value) {
+  return value == null ? t("common.noData") : formatNumber(value);
+}
+
+function formatPercent(value) {
+  return value == null ? t("common.noData") : `${(Number(value) * 100).toFixed(1)}%`;
+}
+
+function formatTimestamp(value) {
+  if (!value) return t("common.noData");
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString(localeMap[state.locale] || "ko-KR", { hour12: false });
+}
+
 function nowText() {
   return new Date().toLocaleString(localeMap[state.locale] || "ko-KR", { hour12: false });
 }
@@ -177,7 +195,49 @@ function updateOperations(payload) {
   setText("ledgerEndpoint", ledgerBase ? `${ledgerBase.replace(/\/+$/, "")}${ledgerPath.startsWith("/") ? ledgerPath : `/${ledgerPath}`}` : "-");
   setText("contractMode", data.ledger?.contractMode || "-");
   setText("usedHeap", t("common.usedHeapValue", { value: formatNumber(data.memory?.usedHeapMb) }));
+  updateRuntimeDashboard(data);
   setText("lastRefresh", nowText());
+}
+
+function updateRuntimeDashboard(data) {
+  const runtime = data.runtime || {};
+  const workforce = data.workforce || {};
+  const balance = data.balance || {};
+  const noData = t("common.noData");
+  const runtimeStatus = runtime.pipelineStatus || runtime.schedulerStatus || (data.liveFlowAvailable ? "LIVE" : "NO_DATA");
+  const produced = runtime.eventsProducedLastTick;
+  const consumed = runtime.eventsConsumedLastTick;
+
+  setText("runtimePipelineStatus", runtimeStatus);
+  setText("runtimeLastEvent", `${t("panel.latestEvent")}: ${formatTimestamp(runtime.lastEventAt || data.latestEventAt)}`);
+  setText("runtimeTickFlow", produced == null && consumed == null ? noData : `${formatOptionalNumber(produced)} / ${formatOptionalNumber(consumed)}`);
+  setText("runtimeBacklog", formatOptionalNumber(balance.backlogCount ?? workforce.backlogCount ?? runtime.backlogCount));
+  setText("runtimeCapacityUtilization", formatPercent(balance.capacityUtilization));
+
+  setText("lifecycleRequested", formatOptionalNumber(balance.shipmentsRequested));
+  setText("lifecycleDispatched", formatOptionalNumber(balance.shipmentsDispatched));
+  setText("lifecycleCompleted", formatOptionalNumber(balance.shipmentsCompleted));
+  setText("lifecycleDelayed", formatOptionalNumber(balance.shipmentsDelayed));
+  setText("lifecycleDelayRate", formatPercent(balance.delayRate));
+  setText("lifecycleAverageEta", balance.averageEta == null ? noData : t("common.minutes", { value: formatNumber(balance.averageEta) }));
+  setText("lifecycleRemainingCapacity", formatOptionalNumber(workforce.remainingCapacity));
+  setText("lifecycleBottleneck", balance.bottleneckRole || workforce.bottleneckRole || noData);
+
+  setText("balanceScope", balance.calculationScope || balance.status || noData);
+  setText("balanceRevenue", formatOptionalCurrency(balance.logisticsRevenue));
+  setText("balanceCost", formatOptionalCurrency(balance.totalCost));
+  setText("balanceProfit", formatOptionalCurrency(balance.operatingProfit));
+  setText("balanceMargin", formatPercent(balance.operatingMargin));
+  setText("balanceCash", formatOptionalCurrency(balance.cashBalance));
+  setText("balanceNegativeProfitStreak", formatOptionalNumber(balance.negativeProfitStreak));
+  setText("balanceFuelCost", formatOptionalCurrency(balance.fuelCost));
+  setText("balanceTollCost", formatOptionalCurrency(balance.tollCost));
+  setText("balanceWorkforceCost", formatOptionalCurrency(balance.workforceCost));
+  const additionalCost = [balance.delayPenaltyCost, balance.coldChainCost, balance.ledgerFee]
+    .filter((value) => value != null)
+    .reduce((total, value) => total + Number(value), 0);
+  const hasAdditionalCost = balance.delayPenaltyCost != null || balance.coldChainCost != null || balance.ledgerFee != null;
+  setText("balanceAdditionalCost", hasAdditionalCost ? formatCurrency(additionalCost) : noData);
 }
 
 function updateRouteSummary(payload) {
@@ -280,23 +340,6 @@ async function refresh() {
   }
 }
 
-async function simulate() {
-  $("simulateButton").disabled = true;
-  try {
-    const result = await request("/api/simulations/shipments?count=100", { method: "POST" });
-    const data = result.data || {};
-    logActivity("activity.simulation", t("activity.simulationDetail", {
-      processed: formatNumber(data.processedCount),
-      outbox: formatNumber(data.outboxCreatedCount),
-    }));
-    await refresh();
-  } catch (error) {
-    logActivity("activity.simulationFailed", error.message);
-  } finally {
-    $("simulateButton").disabled = false;
-  }
-}
-
 async function publishOutbox() {
   $("publishButton").disabled = true;
   try {
@@ -335,7 +378,6 @@ async function runNexusSettlement() {
 document.addEventListener("DOMContentLoaded", () => {
   initLanguageSelector();
   $("refreshButton").addEventListener("click", refresh);
-  $("simulateButton").addEventListener("click", simulate);
   $("publishButton").addEventListener("click", publishOutbox);
   $("settlementButton").addEventListener("click", runNexusSettlement);
   $("routeFilter").addEventListener("submit", (event) => {

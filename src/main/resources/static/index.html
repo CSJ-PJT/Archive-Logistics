@@ -36,7 +36,6 @@
         </select>
       </label>
       <button id="refreshButton" type="button" data-i18n="common.refresh">새로고침</button>
-      <button id="simulateButton" type="button" data-i18n="common.simulate100">시뮬레이션 100</button>
       <button id="publishButton" type="button" data-i18n="common.publishOutbox">Outbox 발행</button>
       <button id="settlementButton" type="button" data-i18n="common.runNexusSettlement">Nexus 정산 실행</button>
     </div>
@@ -101,7 +100,59 @@
       </article>
     </section>
 
+    <section class="runtime-overview" aria-label="Runtime overview" data-i18n-aria-label="aria.runtimeOverview">
+      <div class="runtime-overview-head">
+        <div>
+          <span data-i18n="panel.liveRuntime">실시간 배송 런타임</span>
+          <strong id="runtimePipelineStatus">NO_DATA</strong>
+        </div>
+        <span id="runtimeLastEvent">-</span>
+      </div>
+      <div class="runtime-metrics">
+        <div><span data-i18n="panel.tickFlow">최근 Tick 처리</span><strong id="runtimeTickFlow">-</strong></div>
+        <div><span data-i18n="panel.shipmentsRequested">요청 배송</span><strong id="lifecycleRequested">-</strong></div>
+        <div><span data-i18n="panel.dispatched">배차됨</span><strong id="lifecycleDispatched">-</strong></div>
+        <div><span data-i18n="panel.completed">배송 완료</span><strong id="lifecycleCompleted">-</strong></div>
+        <div><span data-i18n="panel.backlog">Backlog</span><strong id="runtimeBacklog">-</strong></div>
+        <div><span data-i18n="panel.capacityUtilization">용량 사용률</span><strong id="runtimeCapacityUtilization">-</strong></div>
+      </div>
+    </section>
+
     <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2 data-i18n="panel.shipmentLifecycle">배송 Lifecycle</h2>
+          <span id="lifecycleBottleneck">-</span>
+        </div>
+        <div class="metrics lifecycle-metrics">
+          <div><span data-i18n="panel.delayed">지연</span><strong id="lifecycleDelayed">-</strong></div>
+          <div><span data-i18n="panel.delayRate">지연율</span><strong id="lifecycleDelayRate">-</strong></div>
+          <div><span data-i18n="panel.averageEta">평균 ETA</span><strong id="lifecycleAverageEta">-</strong></div>
+          <div><span data-i18n="panel.remainingCapacity">잔여 용량</span><strong id="lifecycleRemainingCapacity">-</strong></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2 data-i18n="panel.balanceAlignment">Balance Alignment</h2>
+          <span id="balanceScope">NO_DATA</span>
+        </div>
+        <div class="metrics balance-metrics">
+          <div><span data-i18n="panel.logisticsRevenue">물류 수익</span><strong id="balanceRevenue">-</strong></div>
+          <div><span data-i18n="panel.totalCost">총 비용</span><strong id="balanceCost">-</strong></div>
+          <div><span data-i18n="panel.operatingProfit">영업 이익</span><strong id="balanceProfit">-</strong></div>
+          <div><span data-i18n="panel.operatingMargin">영업 이익률</span><strong id="balanceMargin">-</strong></div>
+          <div><span data-i18n="panel.cashBalance">현금 잔액</span><strong id="balanceCash">-</strong></div>
+          <div><span data-i18n="panel.negativeProfitStreak">연속 적자</span><strong id="balanceNegativeProfitStreak">-</strong></div>
+        </div>
+        <dl class="balance-details">
+          <div><dt data-i18n="panel.fuelCost">연료 비용</dt><dd id="balanceFuelCost">-</dd></div>
+          <div><dt data-i18n="panel.tollCost">통행료</dt><dd id="balanceTollCost">-</dd></div>
+          <div><dt data-i18n="panel.workforceCost">인력 비용</dt><dd id="balanceWorkforceCost">-</dd></div>
+          <div><dt data-i18n="panel.additionalCost">지연·콜드체인·Ledger 비용</dt><dd id="balanceAdditionalCost">-</dd></div>
+        </dl>
+      </article>
+
       <article class="panel">
         <div class="panel-head">
           <h2 data-i18n="panel.operationsSummary">관제 요약</h2>
