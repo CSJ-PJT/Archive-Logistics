@@ -6,6 +6,7 @@ import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.workforce.WorkdayProductivityResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,23 +20,36 @@ import java.util.Map;
 @Service
 public class ShipmentLifecycleService {
     private static final String SERVICE = "Archive-Logistics";
+    private static final java.util.Set<String> ROUTE_OUTBOX_PROJECTIONS = java.util.Set.of(
+            "SHIPMENT_CREATED", "ROUTE_ASSIGNED", "ROUTE_COST_CALCULATED", "LOGISTICS_COST_CONFIRMED");
 
     private final RoutePlanRepository routePlanRepository;
     private final ShipmentRuntimeEventRepository eventRepository;
     private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
+    private final ArchiveOsRuntimeDeliveryService archiveOsRuntimeDeliveryService;
     private final Clock clock;
 
+    @Autowired
     public ShipmentLifecycleService(RoutePlanRepository routePlanRepository,
                                     ShipmentRuntimeEventRepository eventRepository,
                                     ObjectMapper objectMapper,
-                                    IdGenerator idGenerator,
+                                    IdGenerator idGenerator, ArchiveOsRuntimeDeliveryService archiveOsRuntimeDeliveryService,
                                     Clock clock) {
         this.routePlanRepository = routePlanRepository;
         this.eventRepository = eventRepository;
         this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
+        this.archiveOsRuntimeDeliveryService = archiveOsRuntimeDeliveryService;
         this.clock = clock;
+    }
+
+    ShipmentLifecycleService(RoutePlanRepository routePlanRepository,
+                             ShipmentRuntimeEventRepository eventRepository,
+                             ObjectMapper objectMapper,
+                             IdGenerator idGenerator,
+                             Clock clock) {
+        this(routePlanRepository, eventRepository, objectMapper, idGenerator, null, clock);
     }
 
     @Transactional
@@ -123,14 +137,17 @@ public class ShipmentLifecycleService {
             metadata.put("backlogCount", workday.backlogEvents());
             metadata.put("bottleneckRole", workday.bottleneckType());
         }
-        eventRepository.save(new ShipmentRuntimeEventEntity(
+        ShipmentRuntimeEventEntity saved = eventRepository.save(new ShipmentRuntimeEventEntity(
                 eventId, idempotencyKey, route.routePlanId(), route.shipmentId(), SERVICE,
                 "ArchiveOS", eventType, status, severity,
                 fallback(route.correlationId(), route.sourceEventId()),
-                fallback(route.causationId(), route.sourceEventId()), route.simulationRunId(), route.settlementCycleId(),
+                route.causationId(), route.simulationRunId(), route.settlementCycleId(),
                 workday == null ? null : workday.workdayId(), safe(route.hopCount()), safeMax(route.maxHop()),
                 objectMapper.valueToTree(metadata), LocalDateTime.now(clock)
         ));
+        if (archiveOsRuntimeDeliveryService != null && !ROUTE_OUTBOX_PROJECTIONS.contains(eventType)) {
+            try { archiveOsRuntimeDeliveryService.snapshot(saved); } catch (RuntimeException ignored) { /* observability must not affect shipment progression */ }
+        }
     }
 
     private boolean isTerminal(String status) {

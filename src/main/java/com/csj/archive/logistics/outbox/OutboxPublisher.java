@@ -7,6 +7,7 @@ import com.csj.archive.logistics.ledger.LedgerBulkPublishResponse;
 import com.csj.archive.logistics.ledger.LedgerCompatibleEventPayload;
 import com.csj.archive.logistics.ledger.LedgerPublishProperties;
 import com.csj.archive.logistics.ledger.LedgerPublisherClient;
+import com.csj.archive.logistics.runtime.ArchiveOsRouteOutboxProjectionService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class OutboxPublisher {
     private final com.csj.archive.logistics.common.IdGenerator idGenerator;
     private final Clock clock;
     private final LogisticsEconomyService economyService;
+    private final ArchiveOsRouteOutboxProjectionService archiveOsRouteOutboxProjectionService;
 
     public OutboxPublisher(LogisticsOutboxRepository outboxRepository,
                            LedgerPublishAttemptRepository attemptRepository,
@@ -43,7 +45,8 @@ public class OutboxPublisher {
                            AuditLogService auditLogService,
                            com.csj.archive.logistics.common.IdGenerator idGenerator,
                            Clock clock,
-                           LogisticsEconomyService economyService) {
+                           LogisticsEconomyService economyService,
+                           ArchiveOsRouteOutboxProjectionService archiveOsRouteOutboxProjectionService) {
         this.outboxRepository = outboxRepository;
         this.attemptRepository = attemptRepository;
         this.ledgerPublisherClient = ledgerPublisherClient;
@@ -53,6 +56,7 @@ public class OutboxPublisher {
         this.idGenerator = idGenerator;
         this.clock = clock;
         this.economyService = economyService;
+        this.archiveOsRouteOutboxProjectionService = archiveOsRouteOutboxProjectionService;
     }
 
     @Transactional
@@ -209,6 +213,14 @@ public class OutboxPublisher {
             }
 
             outboxRepository.saveAll(events);
+            if (archiveOsRouteOutboxProjectionService != null) {
+                for (LogisticsOutboxEntity event : publishable) {
+                    if (event.status() == OutboxStatus.PUBLISHED) {
+                        try { archiveOsRouteOutboxProjectionService.ledgerPublished(event, completedAt); }
+                        catch (RuntimeException ignored) { /* PUBLISHED is already committed independently of ArchiveOS */ }
+                    }
+                }
+            }
             LedgerPublishResultStatus status = failed == 0 && retried == 0
                     ? LedgerPublishResultStatus.SUCCESS
                     : LedgerPublishResultStatus.PARTIAL_FAILURE;

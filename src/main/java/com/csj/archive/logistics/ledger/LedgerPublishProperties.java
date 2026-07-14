@@ -9,6 +9,7 @@ public class LedgerPublishProperties {
     private String bulkEndpoint = "/api/events/logistics/bulk";
     private int publishTimeoutMs = 30000;
     private LedgerContractMode contractMode = LedgerContractMode.LOGISTICS_CONFIRMED_NATIVE;
+    private String token = "";
 
     public boolean isEnabled() {
         return enabled;
@@ -49,6 +50,8 @@ public class LedgerPublishProperties {
     public void setContractMode(LedgerContractMode contractMode) {
         this.contractMode = contractMode;
     }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
     public String endpoint() {
         String base = baseUrl == null ? "" : baseUrl.replaceAll("/+$", "");

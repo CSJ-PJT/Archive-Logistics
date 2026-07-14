@@ -1,0 +1,32 @@
+spring:
+  config:
+    activate:
+      on-profile: rc
+  datasource:
+    username: ${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required for rc}
+    password: ${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required for rc}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    env:
+      enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+archive:
+  security:
+    enabled: true
+    internal-service-token: ${ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS:?ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS is required for rc}
+    admin-service-token: ${ARCHIVE_TOKEN_ADMIN_OPERATOR:?ARCHIVE_TOKEN_ADMIN_OPERATOR is required for rc}
+    read-token: ${ARCHIVE_TOKEN_AUTHENTICATED_READ:?ARCHIVE_TOKEN_AUTHENTICATED_READ is required for rc}
+    allowed-sources: ${ARCHIVE_SECURITY_ALLOWED_SOURCES:archive-nexus,archive-os}
+  ledger:
+    token: ${ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER:?ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER is required for rc}
