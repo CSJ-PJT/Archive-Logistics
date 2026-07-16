@@ -62,12 +62,23 @@ public class OutboxPublisher {
     @Transactional
     public OutboxPublishResult publishAvailable(String trigger, int chunkSize) {
         LocalDateTime startedAt = LocalDateTime.now(clock);
-        String batchId = idGenerator.batchId("outbox-" + trigger);
         List<LogisticsOutboxEntity> events = outboxRepository.findPublishable(
                 PUBLISHABLE,
                 startedAt,
                 PageRequest.of(0, Math.max(1, chunkSize))
         );
+        return publishSelected(events, trigger);
+    }
+
+    /**
+     * Publishes only the caller-provided outbox rows. It is used by the scoped
+     * operator path and never expands an event selection into a legacy backlog.
+     */
+    @Transactional
+    public OutboxPublishResult publishSelected(List<LogisticsOutboxEntity> selected, String trigger) {
+        LocalDateTime startedAt = LocalDateTime.now(clock);
+        String batchId = idGenerator.batchId("outbox-" + trigger);
+        List<LogisticsOutboxEntity> events = new ArrayList<>(selected);
 
         if (events.isEmpty()) {
             recordAttempt(batchId, 0, 0, 0, LedgerPublishResultStatus.SKIPPED, null, startedAt, LocalDateTime.now(clock));
