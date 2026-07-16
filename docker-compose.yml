@@ -8,12 +8,12 @@ services:
       archive-logitics-postgres:
         condition: service_healthy
     ports:
-      - "8092:8092"
+      - "127.0.0.1:8092:8092"
     environment:
-      SPRING_PROFILES_ACTIVE: local
+      SPRING_PROFILES_ACTIVE: rc
       SPRING_DATASOURCE_URL: jdbc:postgresql://archive-logitics-postgres:5432/archive_logitics
-      SPRING_DATASOURCE_USERNAME: archive
-      SPRING_DATASOURCE_PASSWORD: archive
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required}
       ARCHIVE_LEDGER_ENABLED: ${ARCHIVE_LEDGER_ENABLED:-true}
       ARCHIVE_LEDGER_BASE_URL: ${ARCHIVE_LEDGER_BASE_URL:-http://host.docker.internal:18080}
       ARCHIVE_LEDGER_BULK_ENDPOINT: ${ARCHIVE_LEDGER_BULK_ENDPOINT:-/api/events/logistics/bulk}
@@ -35,26 +35,39 @@ services:
       ARCHIVE_NEXUS_SETTLEMENT_DATE_OFFSET_DAYS: ${ARCHIVE_NEXUS_SETTLEMENT_DATE_OFFSET_DAYS:-0}
       ARCHIVE_ECONOMY_ENABLED: ${ARCHIVE_ECONOMY_ENABLED:-true}
       ARCHIVE_ECONOMY_PUBLISH_ENABLED: ${ARCHIVE_ECONOMY_PUBLISH_ENABLED:-false}
+      ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS: ${ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS:?ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS is required}
+      ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER: ${ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER:?ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER is required}
+      ARCHIVE_TOKEN_LOGISTICS_TO_OS: ${ARCHIVE_TOKEN_LOGISTICS_TO_OS:?ARCHIVE_TOKEN_LOGISTICS_TO_OS is required}
+      ARCHIVE_TOKEN_AUTHENTICATED_READ: ${ARCHIVE_TOKEN_AUTHENTICATED_READ:?ARCHIVE_TOKEN_AUTHENTICATED_READ is required}
+      ARCHIVE_TOKEN_ADMIN_OPERATOR: ${ARCHIVE_TOKEN_ADMIN_OPERATOR:?ARCHIVE_TOKEN_ADMIN_OPERATOR is required}
       JAVA_OPTS: ${JAVA_OPTS:--Xms128m -Xmx768m}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - archive-runtime
 
   archive-logitics-postgres:
     image: postgres:16-alpine
     container_name: archive-logitics-postgres
-    ports:
-      - "5434:5432"
+    expose:
+      - "5432"
     environment:
       POSTGRES_DB: archive_logitics
-      POSTGRES_USER: archive
-      POSTGRES_PASSWORD: archive
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - archive-logitics-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U archive -d archive_logitics"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
 
 volumes:
   archive-logitics-postgres-data:
+
+networks:
+  archive-runtime:
+    external: true
+    name: archive-runtime

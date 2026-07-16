@@ -43,4 +43,13 @@ public interface LogisticsOutboxRepository extends JpaRepository<LogisticsOutbox
     List<LogisticsOutboxEntity> findPublishable(@Param("statuses") Collection<OutboxStatus> statuses,
                                                 @Param("now") LocalDateTime now,
                                                 Pageable pageable);
+
+    @Query(value = """
+            select * from logistics_outbox_event
+            where payload ->> 'correlationId' = :correlationId
+            order by created_at asc
+            limit :limit
+            """, nativeQuery = true)
+    List<LogisticsOutboxEntity> findByCorrelationId(@Param("correlationId") String correlationId,
+                                                     @Param("limit") int limit);
 }

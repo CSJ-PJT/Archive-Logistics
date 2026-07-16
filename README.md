@@ -138,7 +138,9 @@ Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconcilia
 
 - `GET /api/outbox/events`
 - `GET /api/outbox/events/{eventId}`
+- `GET /api/outbox/correlations/{correlationId}/preview` (최대 50건, read-only)
 - `POST /api/outbox/publish`
+- `POST /api/outbox/events/{eventId}/publish` (명시된 eventId 1건만 발행)
 - `POST /api/outbox/retry-failed`
 - `POST /api/batch/outbox-publish/run`
 - `GET /api/batch/jobs`
@@ -156,6 +158,11 @@ Logistics fee/revenue -> Ledger cost confirmation -> daily settlement/reconcilia
 - Outbox 상태: `PENDING`, `PUBLISHED`, `FAILED`, `RETRY`, `SKIPPED`
 - Ledger 미연동(`ARCHIVE_LEDGER_ENABLED=false`) 시 publish는 `DRY_RUN/SKIPPED`
 - 실패 이벤트는 `retry_count`, `last_error`, `next_retry_at`를 기록해 재시도
+- correlation preview는 legacy backlog를 선택하지 않으며, 단건 publish는 `PUBLISHED`를 idempotent하게 반환합니다. `FAILED`와 `SKIPPED`는 전역 retry 정책을 우회해 재발행하지 않습니다.
+
+## CI 검증
+
+`./gradlew ciTest`는 unit test와 Testcontainers 기반 `integrationTest`를 모두 실행하는 필수 gate입니다. Docker를 사용할 수 없으면 integration test는 PASS로 가장하지 않고 실패/차단되어야 합니다. `check`도 동일 gate에 의존합니다.
 
 스케줄러는 `ARCHIVE_OUTBOX_SCHEDULER_ENABLED=true`일 때만 동작합니다.
 로컬 default는 수동 또는 제한된 구간에서 운영 테스트를 권장합니다.

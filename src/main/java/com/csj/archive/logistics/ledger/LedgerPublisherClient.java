@@ -45,6 +45,8 @@ public class LedgerPublisherClient {
         String responseBody = client.post()
                 .uri(properties.getBulkEndpoint())
                 .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(headers -> { headers.setBearerAuth(properties.getToken()); headers.set("X-Archive-Source-System", "archive-logistics"); headers.set("X-Archive-Service-Scope", "ledger:ingest"); })
                 .body(body)
                 .exchange((request, response) -> {
                     String rawBody = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
