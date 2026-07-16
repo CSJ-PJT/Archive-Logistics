@@ -43,6 +43,9 @@ services:
       JAVA_OPTS: ${JAVA_OPTS:--Xms128m -Xmx768m}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - archive-runtime
 
   archive-logitics-postgres:
     image: postgres:16-alpine
@@ -63,3 +66,8 @@ services:
 
 volumes:
   archive-logitics-postgres-data:
+
+networks:
+  archive-runtime:
+    external: true
+    name: archive-runtime
