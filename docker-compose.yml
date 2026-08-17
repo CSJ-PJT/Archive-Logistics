@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: archive-logitics
+    restart: unless-stopped
     depends_on:
       archive-logitics-postgres:
         condition: service_healthy
@@ -42,6 +43,7 @@ services:
   archive-logitics-postgres:
     image: postgres:16-alpine
     container_name: archive-logitics-postgres
+    restart: unless-stopped
     ports:
       - "5434:5432"
     environment:
