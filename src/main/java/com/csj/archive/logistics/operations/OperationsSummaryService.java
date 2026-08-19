@@ -11,6 +11,7 @@ import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.economy.LogisticsEconomyService;
 import com.csj.archive.logistics.economy.LogisticsEconomySummaryResponse;
 import com.csj.archive.logistics.economy.LogisticsBalanceService;
+import com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse;
 import com.csj.archive.logistics.runtime.RuntimeStatusResponse;
 import com.csj.archive.logistics.runtime.RuntimeWorkLoop;
 import com.csj.archive.logistics.workforce.WorkforceService;
@@ -66,6 +67,7 @@ public class OperationsSummaryService {
         long failedEvents = nexusEventRepository.countByStatus(NexusEventStatus.FAILED);
         long outboxFailed = outboxRepository.countByStatus(OutboxStatus.FAILED);
         LogisticsEconomySummaryResponse economy = economyService.summary();
+        LogisticsBalanceSummaryResponse balance = balanceService.summary();
         WorkforceSummaryResponse workforce = workforceService.workforceSummary();
         RuntimeStatusResponse runtimeStatus = runtimeWorkLoop.status();
         String status = failedEvents > 0 || outboxFailed > 0 || workforce.backlogEvents() > 0 ? "DEGRADED" : "HEALTHY";
@@ -86,12 +88,12 @@ public class OperationsSummaryService {
                 auditLogService.countDuplicates(),
                 failedEvents,
                 routePlanRepository.count(),
-                workforce.shipmentsRequested(),
-                workforce.shipmentsDispatched(),
-                workforce.shipmentsDelayed(),
-                workforce.deliveryCompleted(),
-                workforce.routePlansCreated(),
-                workforce.backlogEvents(),
+                value(balance.shipmentsRequested()),
+                value(balance.shipmentsDispatched()),
+                value(balance.shipmentsDelayed()),
+                value(balance.shipmentsCompleted()),
+                routePlanRepository.count(),
+                value(balance.backlogCount()),
                 new OperationsSummaryResponse.Economy(
                         economy.totalRevenue(),
                         economy.totalCost(),
@@ -99,7 +101,7 @@ public class OperationsSummaryService {
                         economy.cashBalance(),
                         economy.bankruptcyRisk()
                 ),
-                balanceService.summary(),
+                balance,
                 new OperationsSummaryResponse.Outbox(
                         outboxRepository.countByStatus(OutboxStatus.PENDING),
                         outboxRepository.countByStatus(OutboxStatus.PUBLISHED),
@@ -188,5 +190,9 @@ public class OperationsSummaryService {
 
     private long driverCapacity(WorkforceSummaryResponse workforce) {
         return workforce.drivers() * 8L;
+    }
+
+    private long value(Long value) {
+        return value == null ? 0L : value;
     }
 }
