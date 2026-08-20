@@ -18,6 +18,7 @@ import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.route.SyntheticRouteCalculator;
 import com.csj.archive.logistics.workforce.WorkforceService;
 import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
+import com.csj.archive.logistics.runtime.ArchiveOsRouteOutboxProjectionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,6 +52,7 @@ public class NexusLogisticsEventService {
     private final MeterRegistry meterRegistry;
     private final Clock clock;
     private final WorkforceService workforceService;
+    private final ArchiveOsRouteOutboxProjectionService archiveOsRouteOutboxProjectionService;
 
     public NexusLogisticsEventService(NexusEventRepository nexusEventRepository,
                                       RoutePlanRepository routePlanRepository,
@@ -65,7 +67,8 @@ public class NexusLogisticsEventService {
                                       TransactionTemplate transactionTemplate,
                                       MeterRegistry meterRegistry,
                                       Clock clock,
-                                      WorkforceService workforceService) {
+                                      WorkforceService workforceService,
+                                      ArchiveOsRouteOutboxProjectionService archiveOsRouteOutboxProjectionService) {
         this.nexusEventRepository = nexusEventRepository;
         this.routePlanRepository = routePlanRepository;
         this.routeCostRepository = routeCostRepository;
@@ -80,6 +83,7 @@ public class NexusLogisticsEventService {
         this.meterRegistry = meterRegistry;
         this.clock = clock;
         this.workforceService = workforceService;
+        this.archiveOsRouteOutboxProjectionService = archiveOsRouteOutboxProjectionService;
     }
 
     public EventProcessingResult process(NexusLogisticsEventRequest request) {
@@ -167,7 +171,7 @@ public class NexusLogisticsEventService {
         try {
             MarketShipmentMetadata metadata = MarketShipmentMetadata.fromPayload(request.payload());
             RoutePlan routePlan = routeCalculator.calculate(request, metadata);
-            routePlanRepository.save(new RoutePlanEntity(routePlan, now));
+            RoutePlanEntity savedRoutePlan = routePlanRepository.save(new RoutePlanEntity(routePlan, now));
             RouteCostEntity routeCost = routeCostRepository.save(new RouteCostEntity(routePlan, now));
             var economy = economyService.createRouteEconomyEvents(
                     routePlan,
@@ -195,6 +199,12 @@ public class NexusLogisticsEventService {
                     ),
                     now
             ));
+            try {
+                archiveOsRouteOutboxProjectionService.routeCreated(request, savedRoutePlan, routeCost,
+                        outbox, now);
+            } catch (RuntimeException ignored) {
+                // ArchiveOS observability is after-commit and must never affect route or Ledger outbox processing.
+            }
             event.markProcessed(now);
             meterRegistry.counter("archive.logitics.events.processed").increment();
             auditLogService.record(AuditAction.ROUTE_PLAN_CREATED, "route_plan", routePlan.routePlanId(),

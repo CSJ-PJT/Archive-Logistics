@@ -10,6 +10,7 @@ import com.csj.archive.logistics.route.RoutePlanEntity;
 import com.csj.archive.logistics.route.RoutePlanRepository;
 import com.csj.archive.logistics.workforce.WorkforceService;
 import com.csj.archive.logistics.workforce.WorkforceSummaryResponse;
+import com.csj.archive.logistics.runtime.ArchiveOsRouteOutboxProjectionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,7 @@ class NexusLogisticsEventServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuditLogService auditLogService = mock(AuditLogService.class);
     private final WorkforceService workforceService = mock(WorkforceService.class);
+    private final ArchiveOsRouteOutboxProjectionService archiveOsProjection = mock(ArchiveOsRouteOutboxProjectionService.class);
     private final com.csj.archive.logistics.common.IdGenerator idGenerator = new com.csj.archive.logistics.common.IdGenerator(
             Clock.fixed(Instant.parse("2026-01-15T00:00:00Z"), ZoneOffset.UTC),
             new com.csj.archive.logistics.common.DeterministicHash()
@@ -79,7 +81,8 @@ class NexusLogisticsEventServiceTest {
                 transactionTemplate,
                 meterRegistry,
                 clock,
-                workforceService
+                workforceService,
+                archiveOsProjection
         );
         when(workforceService.workforceSummary()).thenReturn(workforceSummary());
     }
@@ -233,6 +236,32 @@ class NexusLogisticsEventServiceTest {
         ArgumentCaptor<RoutePlanEntity> routeCaptor = ArgumentCaptor.forClass(RoutePlanEntity.class);
         verify(routePlanRepository).save(routeCaptor.capture());
         assertThat(routeCaptor.getValue().orderId()).isNull();
+    }
+
+    @Test
+    void archiveOsSnapshotFailureDoesNotRollbackRouteOrLedgerOutbox() {
+        NexusLogisticsEventRequest request = request("evt-projection-failure", "SHIP-003", "FAC-A", "DC-SEOUL-01", "NORMAL", null);
+        RoutePlan routePlan = route(request, false);
+        when(routeCalculator.calculate(eq(request), any())).thenReturn(routePlan);
+        when(nexusEventRepository.findByEventId(request.eventId())).thenReturn(Optional.empty());
+        when(nexusEventRepository.findByIdempotencyKey(request.idempotencyKey())).thenReturn(Optional.empty());
+        when(routePlanRepository.save(any(RoutePlanEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(routeCostRepository.save(any(RouteCostEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(outboxRepository.save(any(LogisticsOutboxEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(nexusEventRepository.save(any(NexusEventEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(economyService.createRouteEconomyEvents(any(), any(), any(), any(), any(), any())).thenReturn(economy(routePlan));
+        org.mockito.Mockito.doThrow(new RuntimeException("ArchiveOS down")).when(archiveOsProjection).routeCreated(any(), any(), any(), any(), any());
+
+        EventProcessingResult result = service.process(request);
+
+        assertThat(result.failed()).isFalse();
+        verify(routePlanRepository).save(any(RoutePlanEntity.class));
+        verify(outboxRepository).save(any(LogisticsOutboxEntity.class));
+    }
+
+    private LogisticsEconomyService.RouteEconomyResult economy(RoutePlan routePlan) {
+        return new LogisticsEconomyService.RouteEconomyResult(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                routePlan.cost().fuelCost(), routePlan.cost().tollCost());
     }
 
     private RoutePlan route(NexusLogisticsEventRequest request, boolean withMetadata) {

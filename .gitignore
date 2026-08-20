@@ -38,6 +38,7 @@ out/
 
 ### Local secrets and runtime data ###
 .env
+.env.rc
 *.local
 logs/
 data/

@@ -32,6 +32,11 @@ public class OutboxController {
         return ApiResponse.ok(outboxService.event(eventId));
     }
 
+    @GetMapping("/correlations/{correlationId}/preview")
+    public ApiResponse<OutboxScopedPublishResponse> preview(@PathVariable String correlationId) {
+        return ApiResponse.ok(outboxService.preview(correlationId));
+    }
+
     @GetMapping("/summary")
     public ApiResponse<OutboxSummaryResponse> summary() {
         return ApiResponse.ok(outboxService.summary());
@@ -40,6 +45,11 @@ public class OutboxController {
     @PostMapping("/publish")
     public ApiResponse<OutboxPublishResult> publish() {
         return ApiResponse.ok(outboxService.publish());
+    }
+
+    @PostMapping("/events/{eventId}/publish")
+    public ApiResponse<OutboxScopedPublishResponse> publishEvent(@PathVariable String eventId) {
+        return ApiResponse.ok(outboxService.publishEvent(eventId));
     }
 
     @PostMapping("/retry-failed")

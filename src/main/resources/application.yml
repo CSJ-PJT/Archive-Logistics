@@ -34,7 +34,7 @@ management:
         enabled: true
   info:
     env:
-      enabled: true
+      enabled: false
 
 info:
   app:
@@ -48,12 +48,19 @@ springdoc:
     path: /swagger-ui.html
 
 archive:
+  security:
+    enabled: ${ARCHIVE_SECURITY_ENABLED:false}
+    internal-service-token: ${ARCHIVE_TOKEN_NEXUS_TO_LOGISTICS:}
+    admin-service-token: ${ARCHIVE_TOKEN_ADMIN_OPERATOR:}
+    read-token: ${ARCHIVE_TOKEN_AUTHENTICATED_READ:}
+    allowed-sources: ${ARCHIVE_SECURITY_ALLOWED_SOURCES:archive-nexus,archive-os}
   ledger:
     enabled: ${ARCHIVE_LEDGER_ENABLED:false}
     base-url: ${ARCHIVE_LEDGER_BASE_URL:http://localhost:18080}
     bulk-endpoint: ${ARCHIVE_LEDGER_BULK_ENDPOINT:/api/events/logistics/bulk}
     publish-timeout-ms: ${ARCHIVE_LEDGER_PUBLISH_TIMEOUT_MS:30000}
     contract-mode: ${ARCHIVE_LEDGER_CONTRACT_MODE:LOGISTICS_CONFIRMED_NATIVE}
+    token: ${ARCHIVE_TOKEN_LOGISTICS_TO_LEDGER:}
   outbox:
     chunk-size: ${ARCHIVE_OUTBOX_CHUNK_SIZE:50}
     max-retry-count: ${ARCHIVE_OUTBOX_MAX_RETRY_COUNT:5}
@@ -95,3 +102,12 @@ archive:
     max-events-per-tick: ${ARCHIVE_RUNTIME_MAX_EVENTS_PER_TICK:10}
     max-backlog-per-tick: ${ARCHIVE_RUNTIME_MAX_BACKLOG_PER_TICK:50}
     max-hop: ${ARCHIVE_RUNTIME_MAX_HOP:5}
+  archiveos:
+    runtime-ingest:
+      enabled: ${ARCHIVEOS_RUNTIME_INGEST_ENABLED:false}
+      base-url: ${ARCHIVEOS_BASE_URL:}
+      path: ${ARCHIVEOS_RUNTIME_INGEST_PATH:/api/live-flow/events/ingest}
+      token: ${ARCHIVE_TOKEN_LOGISTICS_TO_OS:}
+      scheduler-enabled: ${ARCHIVEOS_RUNTIME_INGEST_SCHEDULER_ENABLED:false}
+      max-retry-count: ${ARCHIVEOS_RUNTIME_INGEST_MAX_RETRY_COUNT:5}
+      batch-size: ${ARCHIVEOS_RUNTIME_INGEST_BATCH_SIZE:25}
