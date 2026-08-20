@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -274,10 +276,35 @@ public class LogisticsEconomyService {
 
     @Transactional
     public LogisticsEconomySummaryResponse summary() {
+        Instant periodEnd = clock.instant();
+        Instant periodStart = periodEnd.minus(Duration.ofHours(24));
+        LocalDateTime asOf = LocalDateTime.ofInstant(periodEnd, clock.getZone());
+        LocalDateTime windowStart = asOf.minusHours(24);
         long revenue = safe(revenueEventRepository.sumRevenue());
         long cost = safe(costEventRepository.sumCost());
+        long recognizedRevenue = safe(revenueEventRepository.sumRevenueBetween(windowStart, asOf));
+        long realizedOperatingCost = safe(costEventRepository.sumCostBetween(windowStart, asOf));
+        LocalDateTime sourceLatest = java.util.stream.Stream.of(
+                        revenueEventRepository.findLatestCreatedAtBetween(windowStart, asOf),
+                        costEventRepository.findLatestCreatedAtBetween(windowStart, asOf))
+                .flatMap(java.util.Optional::stream)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        Instant sourceLatestEventAt = sourceLatest == null
+                ? null
+                : sourceLatest.atZone(clock.getZone()).toInstant();
         LogisticsProfitSnapshotEntity latest = snapshotRepository.findTopByOrderByCreatedAtDesc().orElse(null);
-        return LogisticsEconomySummaryResponse.from(latest, revenue, cost);
+        return LogisticsEconomySummaryResponse.from(
+                latest,
+                revenue,
+                cost,
+                recognizedRevenue,
+                realizedOperatingCost,
+                asOf,
+                periodStart,
+                periodEnd,
+                sourceLatestEventAt
+        );
     }
 
     @Transactional(readOnly = true)
@@ -520,10 +547,7 @@ public class LogisticsEconomyService {
         long totalRevenue = safe(revenueEventRepository.sumRevenue());
         long totalCost = safe(costEventRepository.sumCost());
         long profit = totalRevenue - totalCost;
-        long previousBalance = snapshotRepository.findTopByOrderByCreatedAtDesc()
-                .map(LogisticsProfitSnapshotEntity::cashBalance)
-                .orElse(properties.getOpeningCashBalance());
-        long nextBalance = previousBalance + profit;
+        long nextBalance = properties.getOpeningCashBalance() + profit;
         String snapshotId = "SNAP-" + settlementDate.format(BASIC_DATE) + "-" + idGenerator.shortHash(reason + ":" + settlementDate);
         String bankruptcyRisk = bankruptcyRisk(nextBalance, profit);
         snapshotRepository.save(new LogisticsProfitSnapshotEntity(

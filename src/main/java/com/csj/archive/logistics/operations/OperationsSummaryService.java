@@ -99,7 +99,17 @@ public class OperationsSummaryService {
                         economy.totalCost(),
                         economy.totalProfit(),
                         economy.cashBalance(),
-                        economy.bankruptcyRisk()
+                        economy.bankruptcyRisk(),
+                        economy.recognizedRevenue(),
+                        economy.realizedOperatingCost(),
+                        economy.operatingProfit(),
+                        economy.currency(),
+                        economy.calculationScope(),
+                        economy.periodStart(),
+                        economy.periodEnd(),
+                        economy.dataAvailable(),
+                        economy.sourceLatestEventAt(),
+                        economy.legacyCalculationScope()
                 ),
                 balance,
                 new OperationsSummaryResponse.Outbox(

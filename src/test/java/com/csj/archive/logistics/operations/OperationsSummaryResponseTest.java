@@ -3,6 +3,7 @@ package com.csj.archive.logistics.operations;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +30,15 @@ class OperationsSummaryResponseTest {
                 8,
                 10,
                 1,
-                new OperationsSummaryResponse.Economy(100, 50, 50, 1_000, "LOW"),
+                new OperationsSummaryResponse.Economy(
+                        1_000, 500, 500, 5_000, "LOW",
+                        100, 50, 50, "SYNTHETIC_KRW",
+                        "ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS",
+                        Instant.parse("2026-07-09T10:00:00Z"),
+                        Instant.parse("2026-07-10T10:00:00Z"),
+                        true,
+                        Instant.parse("2026-07-10T09:59:00Z"),
+                        "LIFETIME_PERSISTED_LOGISTICS_SNAPSHOT_FIELDS"),
                 new com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse(
                         true, "AVAILABLE", null, 100L, 10L, 5L, 20L, 0L, 0L, 0L, 50L, 50L,
                         java.math.BigDecimal.valueOf(0.5), 1_000L, 10L, 8L, 2L, 8L, 1L,
@@ -58,5 +67,11 @@ class OperationsSummaryResponseTest {
         assertThat(response.balance().operatingMargin()).isEqualByComparingTo("0.5");
         assertThat(response.balance().available()).isTrue();
         assertThat(response.balance().totalCost()).isEqualTo(50L);
+        assertThat(response.economy().recognizedRevenue()).isEqualTo(100L);
+        assertThat(response.economy().realizedOperatingCost()).isEqualTo(50L);
+        assertThat(response.economy().operatingProfit()).isEqualTo(50L);
+        assertThat(response.economy().dataAvailable()).isTrue();
+        assertThat(response.economy().calculationScope())
+                .isEqualTo("ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS");
     }
 }

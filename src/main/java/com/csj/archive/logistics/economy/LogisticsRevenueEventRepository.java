@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Collection;
 
@@ -26,6 +28,24 @@ public interface LogisticsRevenueEventRepository extends JpaRepository<Logistics
             """)
     Long sumRevenue();
 
+    @Query("""
+            select coalesce(sum(e.revenueAmount), 0) from LogisticsRevenueEventEntity e
+            where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+            """)
+    Long sumRevenueBetween(
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toInclusive") LocalDateTime toInclusive
+    );
+
+    @Query("""
+            select max(e.createdAt) from LogisticsRevenueEventEntity e
+            where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+            """)
+    Optional<LocalDateTime> findLatestCreatedAtBetween(
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toInclusive") LocalDateTime toInclusive
+    );
+
     @Query("select coalesce(sum(e.revenueAmount), 0) from LogisticsRevenueEventEntity e where e.revenueType in :types")
-    Long sumRevenueByRevenueTypeIn(@org.springframework.data.repository.query.Param("types") Collection<LogisticsRevenueType> types);
+    Long sumRevenueByRevenueTypeIn(@Param("types") Collection<LogisticsRevenueType> types);
 }

@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Collection;
 
@@ -26,6 +28,24 @@ public interface LogisticsCostEventRepository extends JpaRepository<LogisticsCos
             """)
     Long sumCost();
 
+    @Query("""
+            select coalesce(sum(e.costAmount), 0) from LogisticsCostEventEntity e
+            where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+            """)
+    Long sumCostBetween(
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toInclusive") LocalDateTime toInclusive
+    );
+
+    @Query("""
+            select max(e.createdAt) from LogisticsCostEventEntity e
+            where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+            """)
+    Optional<LocalDateTime> findLatestCreatedAtBetween(
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toInclusive") LocalDateTime toInclusive
+    );
+
     @Query("select coalesce(sum(e.costAmount), 0) from LogisticsCostEventEntity e where e.costType in :types")
-    Long sumCostByCostTypeIn(@org.springframework.data.repository.query.Param("types") Collection<LogisticsCostType> types);
+    Long sumCostByCostTypeIn(@Param("types") Collection<LogisticsCostType> types);
 }

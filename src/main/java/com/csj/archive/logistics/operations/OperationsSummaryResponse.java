@@ -1,6 +1,7 @@
 package com.csj.archive.logistics.operations;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 import com.csj.archive.logistics.economy.LogisticsBalanceSummaryResponse;
 
 public record OperationsSummaryResponse(
@@ -33,7 +34,23 @@ public record OperationsSummaryResponse(
         Ledger ledger,
         Memory memory
 ) {
-    public record Economy(long totalRevenue, long totalCost, long totalProfit, long cashBalance, String bankruptcyRisk) {
+    public record Economy(
+            long totalRevenue,
+            long totalCost,
+            long totalProfit,
+            long cashBalance,
+            String bankruptcyRisk,
+            long recognizedRevenue,
+            long realizedOperatingCost,
+            long operatingProfit,
+            String currency,
+            String calculationScope,
+            Instant periodStart,
+            Instant periodEnd,
+            boolean dataAvailable,
+            Instant sourceLatestEventAt,
+            String legacyCalculationScope
+    ) {
     }
     public record Outbox(long pending, long published, long failed, long retry, long skipped) {
     }
