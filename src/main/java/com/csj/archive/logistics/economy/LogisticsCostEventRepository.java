@@ -31,8 +31,9 @@ public interface LogisticsCostEventRepository extends JpaRepository<LogisticsCos
     @Query("""
             select coalesce(sum(e.costAmount), 0) from LogisticsCostEventEntity e
             where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+              and (e.simulationRunId is null or e.simulationRunId not like 'SIM-RUNTIME-%')
             """)
-    Long sumCostBetween(
+    Long sumRealizedNonRuntimeCostBetween(
             @Param("fromInclusive") LocalDateTime fromInclusive,
             @Param("toInclusive") LocalDateTime toInclusive
     );
@@ -40,8 +41,9 @@ public interface LogisticsCostEventRepository extends JpaRepository<LogisticsCos
     @Query("""
             select max(e.createdAt) from LogisticsCostEventEntity e
             where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
+              and (e.simulationRunId is null or e.simulationRunId not like 'SIM-RUNTIME-%')
             """)
-    Optional<LocalDateTime> findLatestCreatedAtBetween(
+    Optional<LocalDateTime> findLatestRealizedNonRuntimeCreatedAtBetween(
             @Param("fromInclusive") LocalDateTime fromInclusive,
             @Param("toInclusive") LocalDateTime toInclusive
     );
