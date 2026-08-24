@@ -33,7 +33,7 @@ class OperationsSummaryResponseTest {
                 new OperationsSummaryResponse.Economy(
                         1_000, 500, 500, 5_000, "LOW",
                         100, 50, 50, "SYNTHETIC_KRW",
-                        "ROLLING_24H_RECOGNIZED_NON_RUNTIME_LOGISTICS_EVENTS",
+                        "ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS",
                         Instant.parse("2026-07-09T10:00:00Z"),
                         Instant.parse("2026-07-10T10:00:00Z"),
                         true,
@@ -72,6 +72,6 @@ class OperationsSummaryResponseTest {
         assertThat(response.economy().operatingProfit()).isEqualTo(50L);
         assertThat(response.economy().dataAvailable()).isTrue();
         assertThat(response.economy().calculationScope())
-                .isEqualTo("ROLLING_24H_RECOGNIZED_NON_RUNTIME_LOGISTICS_EVENTS");
+                .isEqualTo("ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS");
     }
 }

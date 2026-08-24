@@ -282,11 +282,11 @@ public class LogisticsEconomyService {
         LocalDateTime windowStart = asOf.minusHours(24);
         long revenue = safe(revenueEventRepository.sumRevenue());
         long cost = safe(costEventRepository.sumCost());
-        long recognizedRevenue = safe(revenueEventRepository.sumRecognizedNonRuntimeRevenueBetween(windowStart, asOf));
-        long realizedOperatingCost = safe(costEventRepository.sumRealizedNonRuntimeCostBetween(windowStart, asOf));
+        long recognizedRevenue = safe(revenueEventRepository.sumRecognizedRevenueBetween(windowStart, asOf));
+        long realizedOperatingCost = safe(costEventRepository.sumRealizedCostBetween(windowStart, asOf));
         LocalDateTime sourceLatest = java.util.stream.Stream.of(
-                        revenueEventRepository.findLatestRecognizedNonRuntimeCreatedAtBetween(windowStart, asOf),
-                        costEventRepository.findLatestRealizedNonRuntimeCreatedAtBetween(windowStart, asOf))
+                        revenueEventRepository.findLatestRecognizedCreatedAtBetween(windowStart, asOf),
+                        costEventRepository.findLatestRealizedCreatedAtBetween(windowStart, asOf))
                 .flatMap(java.util.Optional::stream)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);

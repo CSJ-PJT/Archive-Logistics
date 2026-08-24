@@ -87,11 +87,11 @@ class LogisticsEconomyServiceTest {
         );
         when(revenueEventRepository.sumRevenue()).thenReturn(9_000_000L);
         when(costEventRepository.sumCost()).thenReturn(4_000_000L);
-        when(revenueEventRepository.sumRecognizedNonRuntimeRevenueBetween(eq(fromInclusive), eq(asOf))).thenReturn(900_000L);
-        when(costEventRepository.sumRealizedNonRuntimeCostBetween(eq(fromInclusive), eq(asOf))).thenReturn(350_000L);
-        when(revenueEventRepository.findLatestRecognizedNonRuntimeCreatedAtBetween(eq(fromInclusive), eq(asOf)))
+        when(revenueEventRepository.sumRecognizedRevenueBetween(eq(fromInclusive), eq(asOf))).thenReturn(900_000L);
+        when(costEventRepository.sumRealizedCostBetween(eq(fromInclusive), eq(asOf))).thenReturn(350_000L);
+        when(revenueEventRepository.findLatestRecognizedCreatedAtBetween(eq(fromInclusive), eq(asOf)))
                 .thenReturn(Optional.of(asOf.minusMinutes(10)));
-        when(costEventRepository.findLatestRealizedNonRuntimeCreatedAtBetween(eq(fromInclusive), eq(asOf)))
+        when(costEventRepository.findLatestRealizedCreatedAtBetween(eq(fromInclusive), eq(asOf)))
                 .thenReturn(Optional.of(asOf.minusMinutes(5)));
         when(snapshotRepository.findTopByOrderByCreatedAtDesc()).thenReturn(Optional.of(latest));
 
@@ -102,13 +102,13 @@ class LogisticsEconomyServiceTest {
         assertThat(summary.totalProfit()).isEqualTo(5_000_000L);
         assertThat(summary.cashBalance()).isEqualTo(10_000_000L);
         assertThat(summary.currency()).isEqualTo("SYNTHETIC_KRW");
-        assertThat(summary.scope()).isEqualTo("ROLLING_24H_RECOGNIZED_NON_RUNTIME_LOGISTICS_EVENTS");
+        assertThat(summary.scope()).isEqualTo("ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS");
         assertThat(summary.window()).isEqualTo("LAST_24_HOURS");
         assertThat(summary.asOf()).isEqualTo(asOf);
         assertThat(summary.recognizedRevenue()).isEqualTo(900_000L);
         assertThat(summary.realizedOperatingCost()).isEqualTo(350_000L);
         assertThat(summary.operatingProfit()).isEqualTo(550_000L);
-        assertThat(summary.calculationScope()).isEqualTo("ROLLING_24H_RECOGNIZED_NON_RUNTIME_LOGISTICS_EVENTS");
+        assertThat(summary.calculationScope()).isEqualTo("ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS");
         assertThat(summary.periodStart()).isEqualTo(FIXED_INSTANT.minusSeconds(24 * 60 * 60));
         assertThat(summary.periodEnd()).isEqualTo(FIXED_INSTANT);
         assertThat(summary.dataAvailable()).isTrue();
@@ -122,10 +122,10 @@ class LogisticsEconomyServiceTest {
         LocalDateTime fromInclusive = asOf.minusHours(24);
         when(revenueEventRepository.sumRevenue()).thenReturn(9_000_000L);
         when(costEventRepository.sumCost()).thenReturn(4_000_000L);
-        when(revenueEventRepository.sumRecognizedNonRuntimeRevenueBetween(eq(fromInclusive), eq(asOf))).thenReturn(0L);
-        when(costEventRepository.sumRealizedNonRuntimeCostBetween(eq(fromInclusive), eq(asOf))).thenReturn(0L);
-        when(revenueEventRepository.findLatestRecognizedNonRuntimeCreatedAtBetween(eq(fromInclusive), eq(asOf))).thenReturn(Optional.empty());
-        when(costEventRepository.findLatestRealizedNonRuntimeCreatedAtBetween(eq(fromInclusive), eq(asOf))).thenReturn(Optional.empty());
+        when(revenueEventRepository.sumRecognizedRevenueBetween(eq(fromInclusive), eq(asOf))).thenReturn(0L);
+        when(costEventRepository.sumRealizedCostBetween(eq(fromInclusive), eq(asOf))).thenReturn(0L);
+        when(revenueEventRepository.findLatestRecognizedCreatedAtBetween(eq(fromInclusive), eq(asOf))).thenReturn(Optional.empty());
+        when(costEventRepository.findLatestRealizedCreatedAtBetween(eq(fromInclusive), eq(asOf))).thenReturn(Optional.empty());
         when(snapshotRepository.findTopByOrderByCreatedAtDesc()).thenReturn(Optional.empty());
 
         LogisticsEconomySummaryResponse summary = service().summary();

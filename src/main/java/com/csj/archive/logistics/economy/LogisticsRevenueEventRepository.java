@@ -31,9 +31,8 @@ public interface LogisticsRevenueEventRepository extends JpaRepository<Logistics
     @Query("""
             select coalesce(sum(e.revenueAmount), 0) from LogisticsRevenueEventEntity e
             where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
-              and (e.simulationRunId is null or e.simulationRunId not like 'SIM-RUNTIME-%')
             """)
-    Long sumRecognizedNonRuntimeRevenueBetween(
+    Long sumRecognizedRevenueBetween(
             @Param("fromInclusive") LocalDateTime fromInclusive,
             @Param("toInclusive") LocalDateTime toInclusive
     );
@@ -41,9 +40,8 @@ public interface LogisticsRevenueEventRepository extends JpaRepository<Logistics
     @Query("""
             select max(e.createdAt) from LogisticsRevenueEventEntity e
             where e.createdAt >= :fromInclusive and e.createdAt <= :toInclusive
-              and (e.simulationRunId is null or e.simulationRunId not like 'SIM-RUNTIME-%')
             """)
-    Optional<LocalDateTime> findLatestRecognizedNonRuntimeCreatedAtBetween(
+    Optional<LocalDateTime> findLatestRecognizedCreatedAtBetween(
             @Param("fromInclusive") LocalDateTime fromInclusive,
             @Param("toInclusive") LocalDateTime toInclusive
     );

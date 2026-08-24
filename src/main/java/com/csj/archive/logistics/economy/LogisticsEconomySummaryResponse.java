@@ -30,7 +30,7 @@ public record LogisticsEconomySummaryResponse(
         String legacyCalculationScope
 ) {
     private static final String SYNTHETIC_CURRENCY = "SYNTHETIC_KRW";
-    private static final String ACCOUNTING_SCOPE = "ROLLING_24H_RECOGNIZED_NON_RUNTIME_LOGISTICS_EVENTS";
+    private static final String ACCOUNTING_SCOPE = "ROLLING_24H_RECOGNIZED_LOGISTICS_EVENTS";
     private static final String ACCOUNTING_WINDOW = "LAST_24_HOURS";
     private static final String LEGACY_SCOPE = "LIFETIME_PERSISTED_LOGISTICS_SNAPSHOT_FIELDS";
 
