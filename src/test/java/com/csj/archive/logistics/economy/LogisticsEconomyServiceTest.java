@@ -5,6 +5,8 @@ import com.csj.archive.logistics.common.IdGenerator;
 import com.csj.archive.logistics.economy.model.LogisticsProfitSnapshotEntity;
 import com.csj.archive.logistics.economy.properties.LogisticsEconomyProperties;
 import com.csj.archive.logistics.outbox.LogisticsOutboxRepository;
+import com.csj.archive.logistics.outbox.LogisticsOutboxEntity;
+import com.csj.archive.logistics.economy.model.LogisticsCostEventEntity;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -133,6 +135,29 @@ class LogisticsEconomyServiceTest {
         assertThat(summary.operatingProfit()).isZero();
         assertThat(summary.dataAvailable()).isFalse();
         assertThat(summary.sourceLatestEventAt()).isNull();
+    }
+
+    @Test
+    void ledgerPublishFeeReplaySkipsAnExistingDeterministicEventId() {
+        properties.setEnabled(true);
+        properties.setLedgerSettlementAgencyFeePerEvent(12_000L);
+        properties.setLedgerReconciliationFee(0L);
+        LogisticsOutboxEntity outbox = mock(LogisticsOutboxEntity.class);
+        when(outbox.eventId()).thenReturn("outbox-1");
+        when(outbox.eventType()).thenReturn("LOGISTICS_COST_CONFIRMED");
+        when(outbox.payload()).thenReturn(com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode());
+        when(idGenerator.logiticsEventId("LEDGER_SETTLEMENT_AGENCY_FEE_PAID", "outbox-1"))
+                .thenReturn("fee-event-1");
+        when(costEventRepository.findByIdempotencyKey("LOGISTICS:LEDGER_SETTLEMENT_AGENCY_FEE_PAID:outbox-1"))
+                .thenReturn(Optional.empty());
+        when(costEventRepository.findByEventId("fee-event-1"))
+                .thenReturn(Optional.of(mock(LogisticsCostEventEntity.class)));
+        when(revenueEventRepository.sumRevenue()).thenReturn(0L);
+        when(costEventRepository.sumCost()).thenReturn(0L);
+
+        service().recordLedgerPublishFeeEvents(outbox);
+
+        verify(costEventRepository, never()).save(any(LogisticsCostEventEntity.class));
     }
 
     private LogisticsEconomyService service() {

@@ -60,7 +60,7 @@ public class OutboxPublisher {
     }
 
     @Transactional
-    public OutboxPublishResult publishAvailable(String trigger, int chunkSize) {
+    public synchronized OutboxPublishResult publishAvailable(String trigger, int chunkSize) {
         LocalDateTime startedAt = LocalDateTime.now(clock);
         List<LogisticsOutboxEntity> events = outboxRepository.findPublishable(
                 PUBLISHABLE,
@@ -75,7 +75,7 @@ public class OutboxPublisher {
      * operator path and never expands an event selection into a legacy backlog.
      */
     @Transactional
-    public OutboxPublishResult publishSelected(List<LogisticsOutboxEntity> selected, String trigger) {
+    public synchronized OutboxPublishResult publishSelected(List<LogisticsOutboxEntity> selected, String trigger) {
         LocalDateTime startedAt = LocalDateTime.now(clock);
         String batchId = idGenerator.batchId("outbox-" + trigger);
         List<LogisticsOutboxEntity> events = new ArrayList<>(selected);

@@ -53,7 +53,7 @@ public class OutboxController {
     }
 
     @PostMapping("/retry-failed")
-    public ApiResponse<Map<String, Integer>> retryFailed() {
-        return ApiResponse.ok(Map.of("retryScheduledCount", outboxService.retryFailed()));
+    public ApiResponse<Map<String, Integer>> retryFailed(@RequestParam(defaultValue = "200") int limit) {
+        return ApiResponse.ok(Map.of("retryScheduledCount", outboxService.retryFailed(limit)));
     }
 }

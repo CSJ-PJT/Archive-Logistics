@@ -10,6 +10,7 @@ import com.csj.archive.logistics.runtime.ArchiveOsRouteOutboxProjectionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import java.lang.reflect.Modifier;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,6 +30,13 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.ArgumentMatchers.eq;
 
 class OutboxPublisherTest {
+    @Test
+    void publisherEntryPointsAreSerializedToPreventDuplicateConcurrentDelivery() throws Exception {
+        assertThat(Modifier.isSynchronized(OutboxPublisher.class
+                .getMethod("publishAvailable", String.class, int.class).getModifiers())).isTrue();
+        assertThat(Modifier.isSynchronized(OutboxPublisher.class
+                .getMethod("publishSelected", List.class, String.class).getModifiers())).isTrue();
+    }
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final LogisticsOutboxRepository outboxRepository = mock(LogisticsOutboxRepository.class);
     private final LedgerPublishAttemptRepository attemptRepository = mock(LedgerPublishAttemptRepository.class);

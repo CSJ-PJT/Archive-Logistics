@@ -2,6 +2,7 @@ package com.csj.archive.logistics.outbox;
 
 import com.csj.archive.logistics.common.NotFoundException;
 import com.csj.archive.logistics.common.PageResponse;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,8 @@ import java.util.List;
 @Service
 public class OutboxService {
     private static final int MAX_SCOPED_EVENTS = 50;
+    private static final int DEFAULT_FAILED_RETRY_LIMIT = 200;
+    private static final int MAX_FAILED_RETRY_LIMIT = 1_000;
     private final LogisticsOutboxRepository outboxRepository;
     private final OutboxPublisher outboxPublisher;
     private final OutboxProperties outboxProperties;
@@ -84,8 +87,14 @@ public class OutboxService {
 
     @Transactional
     public int retryFailed() {
+        return retryFailed(DEFAULT_FAILED_RETRY_LIMIT);
+    }
+
+    @Transactional
+    public int retryFailed(int limit) {
         LocalDateTime now = LocalDateTime.now(clock);
-        var failed = outboxRepository.findByStatus(OutboxStatus.FAILED);
+        int safeLimit = Math.max(1, Math.min(limit, MAX_FAILED_RETRY_LIMIT));
+        var failed = outboxRepository.findByStatus(OutboxStatus.FAILED, PageRequest.of(0, safeLimit)).getContent();
         failed.forEach(event -> event.resetForRetry(now));
         outboxRepository.saveAll(failed);
         return failed.size();

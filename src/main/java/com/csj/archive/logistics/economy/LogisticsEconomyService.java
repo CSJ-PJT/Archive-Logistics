@@ -474,7 +474,8 @@ public class LogisticsEconomyService {
         }
         String eventId = idGenerator.logiticsEventId(type.name(), aggregateId);
         String idempotencyKey = "LOGISTICS:" + type.name() + ":" + aggregateId;
-        if (revenueEventRepository.findByIdempotencyKey(idempotencyKey).isPresent()) {
+        if (revenueEventRepository.findByIdempotencyKey(idempotencyKey).isPresent()
+                || revenueEventRepository.findByEventId(eventId).isPresent()) {
             return;
         }
         revenueEventRepository.save(new LogisticsRevenueEventEntity(
@@ -517,7 +518,8 @@ public class LogisticsEconomyService {
         }
         String eventId = idGenerator.logiticsEventId(type.name(), aggregateId);
         String idempotencyKey = "LOGISTICS:" + type.name() + ":" + aggregateId;
-        if (costEventRepository.findByIdempotencyKey(idempotencyKey).isPresent()) {
+        if (costEventRepository.findByIdempotencyKey(idempotencyKey).isPresent()
+                || costEventRepository.findByEventId(eventId).isPresent()) {
             return;
         }
         costEventRepository.save(new LogisticsCostEventEntity(
